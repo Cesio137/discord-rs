@@ -1,20 +1,22 @@
-use tokio_tungstenite;
 use serde_json;
+use tokio_tungstenite;
 
 #[derive(Debug)]
-pub enum Error {
+pub enum GatewayError {
     WebSocketError(tokio_tungstenite::tungstenite::Error),
-    SerdeError(serde_json::Error),
+    //SerdeError(serde_json::Error),
+    ReconnectRequired,
+    InvalidSession,
 }
 
-impl From<tungstenite::Error> for Error {
+impl From<tungstenite::Error> for GatewayError {
     fn from(error: tungstenite::error::Error) -> Self {
-        Error::WebSocketError(error.into())
+        GatewayError::WebSocketError(error.into())
     }
 }
 
-impl From<serde_json::Error> for Error {
+/*impl From<serde_json::Error> for GatewayError {
     fn from(error: serde_json::Error) -> Self {
-        Error::SerdeError(error.into())
+        GatewayError::SerdeError(error.into())
     }
-}
+}*/

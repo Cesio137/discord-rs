@@ -1,18 +1,16 @@
+use crate::error::{GatewayError};
 use crate::gateway::Websocket;
-use crate::utils::{ options };
 use crate::utils::options::*;
-use crate::error::Error;
 
 mod config;
-mod utils;
 mod enums;
 mod error;
 mod gateway;
+mod utils;
 
 pub struct Client {
     token: String,
     options: Options,
-    onhandler: Vec<fn(&str)>,
 }
 
 impl Client {
@@ -20,13 +18,25 @@ impl Client {
         Self {
             token,
             options,
-            onhandler: Vec::new(),
         }
     }
 
-    pub async fn login(&self) -> Result<(), Error> {
-        let mut ws = Websocket::new().await?;
-        ws.listen(&self.token).await?;
+    pub async fn login(&self) -> Result<(), GatewayError> {
+        let mut should_reconnect = false;
+        while !should_reconnect {
+            let ws = Websocket::new().await?;
+            let result = ws.listen(&self.token).await;
+            match result {
+                Ok(_) => { should_reconnect = true; }
+                Err(e) => {
+                    match e {
+                        GatewayError::ReconnectRequired => { should_reconnect = false; }
+                        _ => { should_reconnect = true; }
+                    }
+                    if should_reconnect { return Err(e); }
+                }
+            }
+        }
         Ok(())
     }
 }
@@ -42,13 +52,20 @@ mod tests {
     async fn it_works() {
         dotenv().ok();
         let bot_token = env::var("BOT_TOKEN").expect("BOT_TOKEN not defined in file .env");
-        let client = Client::new(bot_token, Options {intents: 32, ..Default::default()});
-        let result = client.login().await;
-        match result {
+        println!("Bot token: {}", bot_token);
+        let client = Client::new(
+            bot_token,
+            Options {
+                intents: 32,
+                ..Default::default()
+            },
+        );
+        
+        match client.login().await {
             Ok(_) => return,
             Err(e) => {
                 panic!("{:?}", e);
-            },
+            }
         }
     }
 }
