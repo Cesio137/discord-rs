@@ -7,9 +7,10 @@ edition = "2024"
 tokio = { version = "1.43", features = ["full"] }
 reqwest = { version = "0.12", features = ["blocking"] }
 tokio-tungstenite = { version = "0.26", features = ["native-tls-vendored"] }
+tungstenite = "0.26.2"
 futures-util = "0.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 url = "2.5"
 sys-info = "0.9"
-tungstenite = "0.26.2"
+dotenvy = "0.15"

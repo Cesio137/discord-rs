@@ -35,9 +35,20 @@ impl Client {
 mod tests {
     use crate::Client;
     use crate::utils::options::Options;
+    use dotenvy::dotenv;
+    use std::env;
 
     #[tokio::test]
     async fn it_works() {
-        
+        dotenv().ok();
+        let bot_token = env::var("BOT_TOKEN").expect("BOT_TOKEN not defined in file .env");
+        let client = Client::new(bot_token, Options {intents: 32, ..Default::default()});
+        let result = client.login().await;
+        match result {
+            Ok(_) => return,
+            Err(e) => {
+                panic!("{:?}", e);
+            },
+        }
     }
 }
