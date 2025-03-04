@@ -1,0 +1,24 @@
+# Rust build
+/target/
+**/*.rs.bk
+
+# Rust/Cargo
+Cargo.lock
+Cargo.toml.orig
+
+# MSVC Windows builds of rustc generate these, which store debugging information
+*.pdb
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Other
+*.log
