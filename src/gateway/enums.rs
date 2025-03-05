@@ -1,0 +1,49 @@
+use bytes::Bytes;
+use tungstenite::Utf8Bytes;
+
+#[repr(u64)]
+#[derive(Debug, Copy, Clone)]
+pub enum Opcode {
+    Dispatch = 0,
+    Heartbeat = 1,
+    Identify = 2,
+    StatusUpdate = 3,
+    VoiceStateUpdate = 4,
+    Resume = 6,
+    Reconnect = 7,
+    RequestGuildMembers = 8,
+    InvalidSession = 9,
+    Hello = 10,
+    HeartbeatAck = 11,
+}
+
+impl TryFrom<u64> for Opcode {
+    type Error = ();
+
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Opcode::Dispatch),
+            1 => Ok(Opcode::Heartbeat),
+            2 => Ok(Opcode::Identify),
+            3 => Ok(Opcode::StatusUpdate),
+            4 => Ok(Opcode::VoiceStateUpdate),
+            6 => Ok(Opcode::Resume),
+            7 => Ok(Opcode::Reconnect),
+            8 => Ok(Opcode::RequestGuildMembers),
+            9 => Ok(Opcode::InvalidSession),
+            10 => Ok(Opcode::Hello),
+            11 => Ok(Opcode::HeartbeatAck),
+            _ => Err(()),
+        }
+    }
+}
+
+pub enum EMessage {
+    Text(String),
+    Binary(Bytes),
+}
+
+pub enum ERawData {
+    Text(Utf8Bytes),
+    Binary(Bytes)
+}

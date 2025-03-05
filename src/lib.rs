@@ -1,5 +1,5 @@
 use crate::error::{GatewayError};
-use crate::gateway::Websocket;
+use crate::gateway::websocket::Websocket;
 use crate::utils::options::*;
 
 mod config;
@@ -8,49 +8,52 @@ mod error;
 mod gateway;
 mod utils;
 
-pub struct Client {
-    token: String,
-    options: Options,
+/*pub struct Client {
+    bot_token: String,
+    client_options: Options,
 }
 
 impl Client {
-    pub fn new(token: String, options: Options) -> Self {
+    pub fn new(bot_token: String, client_options: Options) -> Self {
         Self {
-            token,
-            options,
+            bot_token,
+            client_options,
         }
     }
 
     pub async fn login(&self) -> Result<(), GatewayError> {
-        let mut should_reconnect = false;
-        while !should_reconnect {
-            let ws = Websocket::new().await?;
-            let result = ws.listen(&self.token).await;
-            match result {
-                Ok(_) => { should_reconnect = true; }
-                Err(e) => {
-                    match e {
-                        GatewayError::ReconnectRequired => { should_reconnect = false; }
-                        _ => { should_reconnect = true; }
+        let mut is_connected = false;
+        while !is_connected {
+            let websocket = Websocket::new().await?;
+            let connection_result = websocket.listen(&self.bot_token).await;
+            match connection_result {
+                Ok(_) => { is_connected = true; }
+                Err(gateway_error) => {
+                    match gateway_error {
+                        GatewayError::ReconnectRequired => { is_connected = false; }
+                        _ => { is_connected = true; }
                     }
-                    if should_reconnect { return Err(e); }
+                    if is_connected { return Err(gateway_error); }
                 }
             }
         }
         Ok(())
     }
-}
+}*/
 
 #[cfg(test)]
 mod tests {
-    use crate::Client;
+    //use crate::Client;
     use crate::utils::options::Options;
     use dotenvy::dotenv;
     use std::env;
-
+    use crate::gateway::websocket::Websocket;
+    fn teste() {
+        println!("Ola, mundo!")
+    }
     #[tokio::test]
     async fn it_works() {
-        dotenv().ok();
+        /*dotenv().ok();
         let bot_token = env::var("BOT_TOKEN").expect("BOT_TOKEN not defined in file .env");
         println!("Bot token: {}", bot_token);
         let client = Client::new(
@@ -66,6 +69,16 @@ mod tests {
             Err(e) => {
                 panic!("{:?}", e);
             }
-        }
+        }*/
+        let msg = "Ola, mundo!";
+        let teste = Websocket::new("")
+            .await
+            .unwrap()
+            .on_open(teste)
+            .on_open(move || {
+                println!("{}", msg);
+            });
+        
+        teste.listen().await;
     }
 }
