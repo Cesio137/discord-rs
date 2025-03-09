@@ -1,6 +1,7 @@
 use tungstenite::protocol::frame::coding::CloseCode;
 use tungstenite::protocol::CloseFrame;
 use tungstenite::Error;
+use crate::error::GatewayCloseCode;
 use crate::gateway::enums::EClientEvent;
 use crate::gateway::Gateway;
 use crate::utils::options::*;
@@ -13,8 +14,7 @@ mod utils;
 pub struct Client {
     bot_token: String,
     client_options: Options,
-    gateway: Gateway,
-    should_reconnect: bool
+    gateway: Gateway
 }
 
 impl Client {
@@ -24,7 +24,6 @@ impl Client {
             bot_token,
             client_options,
             gateway,
-            should_reconnect: false
         })
     }
 
@@ -33,28 +32,24 @@ impl Client {
         Ok(())
     }
 
-    pub async fn pool(&mut self) -> Result<EClientEvent, Error> {
+    pub async fn pool(&mut self) -> Result<EClientEvent, error::Error> {
         match self.gateway.pool().await? {
             gateway::enums::EGatewayEvent::Dispatch(client_event) => return Ok(client_event),
-            gateway::enums::EGatewayEvent::ReconnectRequired => {
-                self.should_reconnect = true;
-            },
-            gateway::enums::EGatewayEvent::InvalidSession(d) => {
-                self.should_reconnect = d;
-            },
             gateway::enums::EGatewayEvent::Close(close_frame) => {
-                if cfg!(debug_assertions) {
-                    match close_frame {
-                        Some(frame) => println!("Connection closed.\n{}", frame),
-                        None => println!("Connection closed."),
-                    }
-                }
-                if !self.should_reconnect {
-                    return Err(Error::ConnectionClosed);
-                }
+                let code = match close_frame.code {
+                    CloseCode::Library(code) => code,
+                    _ => {return Err(error::Error::ConnectionClosed(close_frame.into()))}
+                };
+                let close_code = GatewayCloseCode::new(code);
+                eprintln!("Close code: {}\nDescription: {}\nExplanation: {}\nReconnect: {}\n", 
+                          close_code.code, 
+                          close_code.explanation, 
+                          close_code.description, 
+                          close_code.reconnect
+                );
                 self.reconnect().await?;
-                self.should_reconnect = false;
             },
+            _ => {}
         }
 
         Ok(EClientEvent::None)
@@ -77,6 +72,7 @@ mod tests {
     use dotenvy::dotenv;
     use std::env;
     use crate::Client;
+    use crate::error::Error;
     use crate::utils::options::Options;
 
     #[tokio::test]
@@ -90,14 +86,26 @@ mod tests {
         };
         
         match client.login().await {
-            Err(err) => panic!("{:?}", err),
+            Err(err) => panic!("{}", err),
             _ => {}
         }
 
         loop {
             let events = match client.pool().await {
                 Ok(event) => event,
-                Err(err) => panic!("{}", err),
+                Err(err) => {
+                    match err {
+                        Error::ConnectionClosed(error) => {
+                            panic!("{:?}", error)
+                        }
+                        Error::GatewayError(error) => {
+                            panic!("{}", error.code)
+                        }
+                        Error::WebsocketError(error) => {
+                            panic!("{}", error)
+                        }
+                    }
+                },
             };
             println!("Event name: {:?}", events);
         }

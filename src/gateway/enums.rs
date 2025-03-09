@@ -10,7 +10,7 @@ pub enum EGatewayEvent {
     Dispatch(EClientEvent),
     ReconnectRequired,
     InvalidSession(bool),
-    Close(Option<CloseFrame>)
+    Close(CloseFrame)
 }
 
 #[repr(u64)]

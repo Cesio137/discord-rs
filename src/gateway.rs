@@ -6,9 +6,13 @@ use crate::gateway::{enums::{EClientEvent, EWebsocketMessage, Opcode}, websocket
 use enums::EGatewayEvent;
 use serde_json::{json, Value};
 use std::{sync::Arc, str::FromStr, time::Duration};
+use colored::Colorize;
+use futures_util::future::err;
 use tokio::{task::JoinHandle, time::sleep, sync::Mutex};
 use tokio_tungstenite::tungstenite::Error;
-use tungstenite::protocol::{CloseFrame, frame::coding::CloseCode};
+use tungstenite::protocol::CloseFrame;
+use tungstenite::protocol::frame::coding::CloseCode;
+use crate::error;
 
 type ArcWebsocket = Arc<Mutex<Websocket>>;
 type ArcBool = Arc<Mutex<bool>>;
@@ -57,11 +61,40 @@ impl Gateway {
         Ok(())
     }
     
-    pub async fn pool(&mut self) -> Result<EGatewayEvent, Error>  {
+    pub async fn pool(&mut self) -> Result<EGatewayEvent, error::Error>  {
         let data = match self.websocket.lock().await.pool().await? {
             EWebsocketMessage::None => return Ok(EGatewayEvent::Dispatch(EClientEvent::None)),
             EWebsocketMessage::Text(utf8_bytes) => utf8_bytes.to_string(),
-            EWebsocketMessage::Close(close_frame) => return Ok(EGatewayEvent::Close(close_frame)),
+            EWebsocketMessage::Close(close_frame) => {
+                let frame = match close_frame {
+                    None => return Err(error::Error::ConnectionClosed(None)),
+                    Some(frame) => frame
+                };
+                
+                let lib_code = match frame.code {
+                    CloseCode::Library(code) => code,
+                    _ => {return Err(error::Error::from(frame))}
+                };
+                
+                match lib_code { 
+                    4000 => return Ok(EGatewayEvent::Close(frame)),
+                    4001 => return Ok(EGatewayEvent::Close(frame)),
+                    4002 => return Ok(EGatewayEvent::Close(frame)),
+                    4003 => return Ok(EGatewayEvent::Close(frame)),
+                    4004 => return Err(error::Error::from(frame)),
+                    4005 => return Ok(EGatewayEvent::Close(frame)),
+                    4006 => return Ok(EGatewayEvent::Close(frame)),
+                    4008 => return Ok(EGatewayEvent::Close(frame)),
+                    4009 => return Ok(EGatewayEvent::Close(frame)),
+                    4010 => return Err(error::Error::from(frame)),
+                    4011 => return Err(error::Error::from(frame)),
+                    4012 => return Err(error::Error::from(frame)),
+                    4013 => return Err(error::Error::from(frame)),
+                    4014 => return Err(error::Error::from(frame)),
+                    _ => {}
+                }
+                return Err(error::Error::ConnectionClosed(frame.into()));
+            },
         };
 
         Ok(self.handle_events(&data).await?)
@@ -76,9 +109,8 @@ impl Gateway {
         let parse = match Value::from_str(data) {
             Ok(str) => str,
             Err(err) => {
-                if cfg!(debug_assertions) {
-                    eprintln!("Error trying to parse json data.\n{}", err);
-                }
+                eprintln!("Error trying to parse json data.\n{}", err);
+                
                 return Ok(EGatewayEvent::Dispatch(EClientEvent::None))
             }
         };
@@ -88,9 +120,8 @@ impl Gateway {
             Some(op) => match enums::Opcode::try_from(op) {
                 Ok(op) => op,
                 Err(_) => {
-                    if cfg!(debug_assertions) {
-                        eprintln!("Error trying to get 'op' field from json data.");
-                    }
+                    eprintln!("Error trying to get 'op' field from json data.");
+                    
                     return Ok(EGatewayEvent::Dispatch(EClientEvent::None));
                 }
             },
@@ -98,7 +129,7 @@ impl Gateway {
 
         match opcode {
             Opcode::Dispatch => {
-                              
+                
             }
             Opcode::Heartbeat => {
                 let heartbeat_payload = json!({
@@ -108,16 +139,12 @@ impl Gateway {
                 self.websocket.lock().await.send(heartbeat_payload).await?;
             }
             Opcode::Reconnect => {
-                if cfg!(debug_assertions) {
-                    eprintln!("Need to reconnect.");
-                }
+                println!("{}", "Need to reconnect.".yellow());
                 
                 return Ok(EGatewayEvent::ReconnectRequired);
             }
             Opcode::InvalidSession => {
-                if cfg!(debug_assertions) {
-                    eprintln!("Invalid session.");
-                }
+                println!("{}", "Invalid session.".yellow());
 
                 let d = match parse["d"].as_bool() {
                     None => {false}
@@ -170,9 +197,7 @@ impl Gateway {
             sleep(Duration::from_millis(interval)).await;
             
             if !*is_ack_received.lock().await {
-                if cfg!(debug_assertions) {
-                    eprintln!("Heartbeat acknowledgment not received! Closing connection.");
-                }
+                println!("{}", "Heartbeat acknowledgment not received! Closing connection.".yellow());
 
                 if !websocket.lock().await.is_open() {
                     return;
@@ -180,10 +205,6 @@ impl Gateway {
                 
                 let _ = websocket.lock().await.close(Some(CloseFrame {
                     code: tungstenite::protocol::frame::coding::CloseCode::Away,
-                    reason: "Heartbeat acknowledgment not received.".into(),
-                })).await;
-                let _ = websocket.lock().await.close(Some(CloseFrame {
-                    code: CloseCode::Away,
                     reason: "Heartbeat acknowledgment not received.".into(),
                 })).await;
                 return;
