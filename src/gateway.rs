@@ -2,55 +2,45 @@ pub mod websocket;
 pub mod enums;
 
 use crate::config::WS_URL;
-//use crate::enums::{gateway, gateway::Opcode};
-use crate::error::GatewayError;
-use futures_util::{future::try_join_all, SinkExt, StreamExt};
+use crate::gateway::{enums::{EClientEvent, EWebsocketMessage, Opcode}, websocket::Websocket};
+use enums::EGatewayEvent;
 use serde_json::{json, Value};
-use std::{cell::RefCell, str::FromStr, sync::Arc, time::Duration};
-use tokio::{
-    net::TcpStream,
-    sync::Mutex as TokioMutex,
-    task::JoinHandle,
-    time::sleep,
-};
-use tokio_tungstenite::{
-    connect_async, tungstenite::Error, tungstenite::Message, MaybeTlsStream, WebSocketStream,
-};
-use tungstenite::protocol::CloseFrame;
-use tungstenite::protocol::frame::coding::CloseCode;
-use tungstenite::protocol::frame::coding::CloseCode::Away;
-use crate::gateway::enums::{EMessage, Opcode};
-use crate::gateway::websocket::Websocket;
-//use crate::error::GatewayError;
+use std::{sync::Arc, str::FromStr, time::Duration};
+use tokio::{task::JoinHandle, time::sleep, sync::Mutex};
+use tokio_tungstenite::tungstenite::Error;
+use tungstenite::protocol::{CloseFrame, frame::coding::CloseCode};
 
-type ArcWebsocket = Arc<TokioMutex<Websocket>>;
-type ArcBool = Arc<TokioMutex<bool>>;
+type ArcWebsocket = Arc<Mutex<Websocket>>;
+type ArcBool = Arc<Mutex<bool>>;
 
 pub struct Gateway {
     websocket: ArcWebsocket,
-    handler_tasks: RefCell<Vec<JoinHandle<()>>>,
-    is_ack_received: ArcBool,
+    handler_task: Option<JoinHandle<()>>,
+    is_ack_received: ArcBool
 }
 
 impl Drop for Gateway {
     fn drop(&mut self) {
-        if self.handler_tasks.borrow().len() > 0 {
-            let _ = try_join_all(self.handler_tasks.borrow_mut().drain(..));
+        match &self.handler_task {
+            None => {}
+            Some(task) => {
+                task.abort();
+            }
         }
     }
 }
 
 impl Gateway {
-    async fn new() -> Result<Self, Error> {
-        let ws = Arc::new(TokioMutex::new(Websocket::new(WS_URL).await?));
+    pub async fn new() -> Result<Self, Error> {
+        let ws = Arc::new(Mutex::new(Websocket::new(WS_URL).await?));
         Ok(Self {
             websocket: ws,
-            handler_tasks: RefCell::new(Vec::new()),
-            is_ack_received: Arc::new(TokioMutex::new(false)),
+            handler_task: None,
+            is_ack_received: Arc::new(Mutex::new(false)),
         })
     }
-    
-    pub async fn listen(&mut self, bot_token: &str) -> Result<(), Error>  {
+
+    pub async fn identify(&self, bot_token: &str) -> Result<(), Error> {
         let identify_payload = json!({
             "op": 2,
             "d": {
@@ -63,73 +53,95 @@ impl Gateway {
                 }
             }
         }).to_string();
-        self.websocket.lock().await.send(EMessage::Text(identify_payload)).await?;
-        self.websocket.lock().await.listen().await?;
-        Ok(())
-    }
-
-    async fn message_recvd(&mut self, message: EMessage) -> Result<(), GatewayError> {
-        match message {
-            EMessage::Text(text) => {
-                self.handle_events(text.as_str()).await?;
-            }
-            EMessage::Binary(_) => {}
-        }
+        self.websocket.lock().await.send(identify_payload).await?;
         Ok(())
     }
     
-    async fn handle_events(&mut self, data: &str) -> Result<(), GatewayError>  {
-        let parse = match serde_json::Value::from_str(data) {
+    pub async fn pool(&mut self) -> Result<EGatewayEvent, Error>  {
+        let data = match self.websocket.lock().await.pool().await? {
+            EWebsocketMessage::None => return Ok(EGatewayEvent::Dispatch(EClientEvent::None)),
+            EWebsocketMessage::Text(utf8_bytes) => utf8_bytes.to_string(),
+            EWebsocketMessage::Close(close_frame) => return Ok(EGatewayEvent::Close(close_frame)),
+        };
+
+        Ok(self.handle_events(&data).await?)
+    }
+
+    pub async fn close(&mut self, msg: Option<CloseFrame>) -> Result<(), Error>  {
+        self.websocket.lock().await.close(msg).await?;
+        Ok(())
+    }
+    
+    async fn handle_events(&mut self, data: &str) -> Result<EGatewayEvent, Error>  {
+        let parse = match Value::from_str(data) {
             Ok(str) => str,
-            Err(err) => return Err(GatewayError::from(err))
+            Err(err) => {
+                if cfg!(debug_assertions) {
+                    eprintln!("Error trying to parse json data.\n{}", err);
+                }
+                return Ok(EGatewayEvent::Dispatch(EClientEvent::None))
+            }
         };
 
         let opcode = match parse["op"].as_u64() {
-            None => return Ok(()),
+            None => return Ok(EGatewayEvent::Dispatch(EClientEvent::None)),
             Some(op) => match enums::Opcode::try_from(op) {
                 Ok(op) => op,
-                Err(e) => {
+                Err(_) => {
                     if cfg!(debug_assertions) {
-                        eprintln!("Error getting opcode from Discord API message: {:?}", e);
+                        eprintln!("Error trying to get 'op' field from json data.");
                     }
-                    return Ok(());
+                    return Ok(EGatewayEvent::Dispatch(EClientEvent::None));
                 }
             },
         };
 
         match opcode {
-            Opcode::Dispatch => {}
+            Opcode::Dispatch => {
+                              
+            }
             Opcode::Heartbeat => {
                 let heartbeat_payload = json!({
                     "op": 1,
                     "d": null
                 }).to_string();
-                self.websocket.lock().await.send(EMessage::Text(heartbeat_payload)).await?;
+                self.websocket.lock().await.send(heartbeat_payload).await?;
             }
             Opcode::Reconnect => {
                 if cfg!(debug_assertions) {
                     eprintln!("Need to reconnect.");
                 }
+                
+                return Ok(EGatewayEvent::ReconnectRequired);
             }
             Opcode::InvalidSession => {
                 if cfg!(debug_assertions) {
                     eprintln!("Invalid session.");
                 }
+
+                let d = match parse["d"].as_bool() {
+                    None => {false}
+                    Some(t) => {t}
+                };
+                return Ok(EGatewayEvent::InvalidSession(d));
             }
             Opcode::Hello => {
+                match &self.handler_task {
+                    None => {}
+                    Some(task) => {
+                        task.abort();
+                    }
+                }
+                
                 let interval: u64 = match parse["d"].as_object() {
                     None => 40000,
                     Some(d) => d["heartbeat_interval"].as_u64().unwrap_or(40000),
                 };
-
                 let ws_clone = Arc::clone(&self.websocket);
                 let is_ack_received_clone = Arc::clone(&self.is_ack_received);
-
-                let task_handle = tokio::spawn(async move {
+                self.handler_task = tokio::spawn(async move {
                     Gateway::heartbeat(ws_clone, is_ack_received_clone, interval).await;
-                });
-
-                self.handler_tasks.borrow_mut().push(task_handle);
+                }).into();
             }
             Opcode::HeartbeatAck => {
                 *self.is_ack_received.lock().await = true;
@@ -137,25 +149,35 @@ impl Gateway {
             _ => {}
         }
         
-        Ok(())
+        Ok(EGatewayEvent::Dispatch(EClientEvent::None))
     }
-    
-    async fn heartbeat(websocket: ArcWebsocket, is_ack_received: ArcBool, interval: u64) {
+
+    async fn heartbeat(websocket: Arc<Mutex<Websocket>>, is_ack_received: Arc<Mutex<bool>>, interval: u64) {
         let heartbeat_payload = json!({
             "op": 1,
             "d": null
         }).to_string();
-        
-        while websocket.lock().await.is_open() {
-            let _ = websocket.lock().await.send(EMessage::Text(heartbeat_payload.clone())).await;
 
+        loop {
+            if !websocket.lock().await.is_open() {
+                return;
+            }
+            
+            let _ = match websocket.lock().await.send(heartbeat_payload.clone()).await {
+                Err(_) => return,
+                _ => {}
+            };
             sleep(Duration::from_millis(interval)).await;
-
+            
             if !*is_ack_received.lock().await {
                 if cfg!(debug_assertions) {
                     eprintln!("Heartbeat acknowledgment not received! Closing connection.");
                 }
 
+                if !websocket.lock().await.is_open() {
+                    return;
+                }
+                
                 let _ = websocket.lock().await.close(Some(CloseFrame {
                     code: tungstenite::protocol::frame::coding::CloseCode::Away,
                     reason: "Heartbeat acknowledgment not received.".into(),
@@ -164,7 +186,7 @@ impl Gateway {
                     code: CloseCode::Away,
                     reason: "Heartbeat acknowledgment not received.".into(),
                 })).await;
-                break;
+                return;
             }
 
             *is_ack_received.lock().await = false;

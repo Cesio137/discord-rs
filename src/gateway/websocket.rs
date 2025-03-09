@@ -1,18 +1,14 @@
-use std::pin::Pin;
-use tokio::{net::TcpStream};
+use tokio::net::TcpStream;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, tungstenite::Error, connect_async};
 use tungstenite::{Message, protocol::CloseFrame};
 use futures_util::{SinkExt, StreamExt};
-use crate::gateway::enums::{EMessage, ERawData};
+use crate::gateway::enums::EWebsocketMessage;
 
 type WebsocketStream = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
 pub struct Websocket {
     stream: WebsocketStream,
     is_open: bool,
-    on_open: Vec<Box<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send + Sync>>>>,
-    on_message: Vec<Box<dyn Fn(&ERawData) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>>>>,
-    on_close: Vec<Box<dyn Fn(&Option<CloseFrame>) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>>>>,
 }
 
 impl Websocket {
@@ -21,104 +17,48 @@ impl Websocket {
         Ok(Self {
             stream: ws_stream,
             is_open: true,
-            on_open: Vec::new(),
-            on_message: Vec::new(),
-            on_close: Vec::new(),
         })
-    }
-
-    pub fn on_open<F>(mut self, function: F) -> Self
-    where
-        F: Fn() -> Pin<Box<dyn Future<Output = ()> + Send + Sync>> + 'static,
-    {
-        self.on_open.push(Box::new(function));
-        self
-    }
-
-    pub fn on_message<F>(mut self, function: F) -> Self
-    where
-        F: Fn(&ERawData) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>> + 'static,
-    {
-        self.on_message.push(Box::new(function));
-        self
-    }
-
-    pub fn on_close<F>(mut self, function: F) -> Self
-    where
-        F: Fn(&Option<CloseFrame>) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>> + 'static,
-    {
-        self.on_close.push(Box::new(function));
-        self
     }
 
     pub fn is_open(&self) -> bool {
         self.is_open
     }
 
-    pub async fn send(&mut self, message: EMessage) -> Result<(), Error> {
-        match message {
-            EMessage::Text(text) => {
-                self.stream.send(Message::text(text)).await?;
-            }
-            EMessage::Binary(bytes) => {
-                self.stream.send(Message::Binary(bytes)).await?;
-            }
-        }
+    pub async fn send(&mut self, message: String) -> Result<(), Error> {
+        self.stream.send(Message::text(message)).await?;
         Ok(())
     }
 
-    pub async fn listen(&mut self) -> Result<(), Error>{
-        self.call_on_open();
-
-        while let Some(stream_message) = self.stream.next().await {
-            let message = match stream_message {
-                Ok(msg) => {msg}
-                Err(err) => {return Err(err)}
-            };
-
-            match message {
-                Message::Text(text) => {
-                    if text.is_empty() {continue}
-                    self.call_on_message(ERawData::Text(text)).await;
+    pub async fn pool(&mut self) -> Result<EWebsocketMessage, Error> {
+        let message = match self.stream.next().await {
+            None => return Ok(EWebsocketMessage::None),
+            Some(result) => {
+                match result {
+                    Ok(msg) => {msg}
+                    Err(err) => {return Err(err);}
                 }
-                Message::Binary(bytes) => {
-                    if bytes.is_empty() {continue}
-                    self.call_on_message(ERawData::Binary(bytes)).await;
-                }
-                Message::Close(msg) => {
-                    self.close(msg.clone()).await?;
-                    self.is_open = false;
-                    self.call_on_close(msg).await;
-                }
-                _ => {}
             }
+        };
+
+        match message {
+            Message::Text(utf8_bytes) => {
+                if utf8_bytes.is_empty() {return Ok(EWebsocketMessage::None)}
+                return Ok(EWebsocketMessage::Text(utf8_bytes))
+            }
+            Message::Binary(_) => {return Ok(EWebsocketMessage::None)}
+            Message::Close(msg) => {
+                self.is_open = false;
+                self.close(msg.clone()).await?;
+                return Ok(EWebsocketMessage::Close(msg));
+            }
+            _ => {}
         }
-        Ok(())
+
+        Ok(EWebsocketMessage::None)
     }
 
     pub async fn close(&mut self, msg: Option<CloseFrame>) -> Result<(), Error> {
         self.stream.close(msg).await?;
         Ok(())
-    }
-
-    async fn call_on_open(&self) {
-        if !self.on_open.is_empty() {return;}
-        for func in &self.on_open {
-            func().await;
-        }
-    }
-
-    async fn call_on_message(&self, message: ERawData) {
-        if !self.on_message.is_empty() {return;}
-        for func in &self.on_message {
-            func(&message).await;
-        }
-    }
-
-    async fn call_on_close(&self, msg: Option<CloseFrame>) {
-        if !self.on_close.is_empty() {return;}
-        for func in &self.on_close {
-            func(&msg).await;
-        }
     }
 }

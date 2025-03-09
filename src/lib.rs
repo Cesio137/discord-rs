@@ -1,84 +1,105 @@
-use crate::error::{GatewayError};
-use crate::gateway::websocket::Websocket;
+use tungstenite::protocol::frame::coding::CloseCode;
+use tungstenite::protocol::CloseFrame;
+use tungstenite::Error;
+use crate::gateway::enums::EClientEvent;
+use crate::gateway::Gateway;
 use crate::utils::options::*;
 
 mod config;
-mod enums;
 mod error;
 mod gateway;
 mod utils;
 
-/*pub struct Client {
+pub struct Client {
     bot_token: String,
     client_options: Options,
+    gateway: Gateway,
+    should_reconnect: bool
 }
 
 impl Client {
-    pub fn new(bot_token: String, client_options: Options) -> Self {
-        Self {
+    pub async fn new(bot_token: String, client_options: Options) -> Result<Client, Error> {
+        let gateway = Gateway::new().await?;
+        Ok(Self {
             bot_token,
             client_options,
-        }
+            gateway,
+            should_reconnect: false
+        })
     }
 
-    pub async fn login(&self) -> Result<(), GatewayError> {
-        let mut is_connected = false;
-        while !is_connected {
-            let websocket = Websocket::new().await?;
-            let connection_result = websocket.listen(&self.bot_token).await;
-            match connection_result {
-                Ok(_) => { is_connected = true; }
-                Err(gateway_error) => {
-                    match gateway_error {
-                        GatewayError::ReconnectRequired => { is_connected = false; }
-                        _ => { is_connected = true; }
-                    }
-                    if is_connected { return Err(gateway_error); }
-                }
-            }
-        }
+    pub async fn login(&self) -> Result<(), Error> {
+        self.gateway.identify(&self.bot_token).await?;
         Ok(())
     }
-}*/
+
+    pub async fn pool(&mut self) -> Result<EClientEvent, Error> {
+        match self.gateway.pool().await? {
+            gateway::enums::EGatewayEvent::Dispatch(client_event) => return Ok(client_event),
+            gateway::enums::EGatewayEvent::ReconnectRequired => {
+                self.should_reconnect = true;
+            },
+            gateway::enums::EGatewayEvent::InvalidSession(d) => {
+                self.should_reconnect = d;
+            },
+            gateway::enums::EGatewayEvent::Close(close_frame) => {
+                if cfg!(debug_assertions) {
+                    match close_frame {
+                        Some(frame) => println!("Connection closed.\n{}", frame),
+                        None => println!("Connection closed."),
+                    }
+                }
+                if !self.should_reconnect {
+                    return Err(Error::ConnectionClosed);
+                }
+                self.reconnect().await?;
+                self.should_reconnect = false;
+            },
+        }
+
+        Ok(EClientEvent::None)
+    }
+
+    async fn reconnect(&mut self) -> Result<(), Error> {
+        let _ = self.gateway.close(Some(CloseFrame {
+            code: CloseCode::Normal,
+            reason: "".into(),
+        })).await;
+
+        self.gateway = Gateway::new().await?;
+        self.gateway.identify(&self.bot_token).await?;
+        Ok(())
+    }
+}
 
 #[cfg(test)]
 mod tests {
-    //use crate::Client;
-    use crate::utils::options::Options;
     use dotenvy::dotenv;
     use std::env;
-    use crate::gateway::websocket::Websocket;
-    fn teste() {
-        println!("Ola, mundo!")
-    }
+    use crate::Client;
+    use crate::utils::options::Options;
+
     #[tokio::test]
     async fn it_works() {
-        /*dotenv().ok();
+        dotenv().ok();
         let bot_token = env::var("BOT_TOKEN").expect("BOT_TOKEN not defined in file .env");
         println!("Bot token: {}", bot_token);
-        let client = Client::new(
-            bot_token,
-            Options {
-                intents: 32,
-                ..Default::default()
-            },
-        );
+        let mut client = match Client::new(bot_token, Options::default()).await {
+            Ok(client) => client,
+            Err(err) => panic!("{:?}", err)
+        };
         
         match client.login().await {
-            Ok(_) => return,
-            Err(e) => {
-                panic!("{:?}", e);
-            }
-        }*/
-        let msg = "Ola, mundo!";
-        let teste = Websocket::new("")
-            .await
-            .unwrap()
-            .on_open(teste)
-            .on_open(move || {
-                println!("{}", msg);
-            });
-        
-        teste.listen().await;
+            Err(err) => panic!("{:?}", err),
+            _ => {}
+        }
+
+        loop {
+            let events = match client.pool().await {
+                Ok(event) => event,
+                Err(err) => panic!("{}", err),
+            };
+            println!("Event name: {:?}", events);
+        }
     }
 }
