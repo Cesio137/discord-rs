@@ -1,5 +1,4 @@
-use tungstenite::protocol::CloseFrame;
-use tungstenite::protocol::frame::coding::CloseCode;
+use tokio_tungstenite::tungstenite::{Error as TkError, protocol::{CloseFrame, frame::coding::CloseCode}};
 
 #[derive(Debug)]
 pub enum Error {
@@ -111,8 +110,8 @@ impl From<tokio_tungstenite::tungstenite::Error> for Error {
     }
 }
 
-impl From<tungstenite::protocol::CloseFrame> for Error {
-    fn from(err: tungstenite::protocol::CloseFrame) -> Self {
+impl From<CloseFrame> for Error {
+    fn from(err: CloseFrame) -> Self {
         let error_code = match err.code {
             CloseCode::Library(code) => code,
             _ => {

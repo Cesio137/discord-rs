@@ -1,13 +1,15 @@
 pub struct Options {
     pub intents: u32,
-    pub partials: u32,
+    pub compress: bool,
+    pub large_threshold: u8,
 }
 
 impl Options {
     fn default() -> Self {
         Self {
             intents: 513,
-            partials: 2,
+            compress: false,
+            large_threshold: 250,
         }
     }
 }

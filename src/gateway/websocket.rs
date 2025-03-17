@@ -1,6 +1,6 @@
 use tokio::net::TcpStream;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, tungstenite::Error, connect_async};
-use tungstenite::{Message, protocol::CloseFrame};
+use tokio_tungstenite::tungstenite::{Message, protocol::CloseFrame};
 use futures_util::{SinkExt, StreamExt};
 use crate::gateway::enums::EWebsocketMessage;
 

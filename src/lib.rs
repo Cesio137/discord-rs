@@ -1,15 +1,24 @@
-use tungstenite::protocol::frame::coding::CloseCode;
-use tungstenite::protocol::CloseFrame;
-use tungstenite::Error;
+use tokio_tungstenite::tungstenite::{protocol::{frame::coding::CloseCode, CloseFrame}, Error};
 use crate::error::GatewayCloseCode;
-use crate::gateway::enums::EClientEvent;
-use crate::gateway::Gateway;
+use crate::gateway::{
+    Gateway,
+    events::{
+        EClientEvent,
+        EGatewayEvent
+    }
+};
 use crate::utils::options::*;
 
 mod config;
 mod error;
 mod gateway;
 mod utils;
+mod handlers;
+mod resources;
+mod interactions;
+mod events;
+pub mod model;
+pub mod internal;
 
 pub struct Client {
     bot_token: String,
@@ -34,8 +43,8 @@ impl Client {
 
     pub async fn pool(&mut self) -> Result<EClientEvent, error::Error> {
         match self.gateway.pool().await? {
-            gateway::enums::EGatewayEvent::Dispatch(client_event) => return Ok(client_event),
-            gateway::enums::EGatewayEvent::Close(close_frame) => {
+            EGatewayEvent::Dispatch(client_event) => return Ok(client_event),
+            EGatewayEvent::Close(close_frame) => {
                 let code = match close_frame.code {
                     CloseCode::Library(code) => code,
                     _ => {return Err(error::Error::ConnectionClosed(close_frame.into()))}

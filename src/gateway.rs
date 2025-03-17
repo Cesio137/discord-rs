@@ -1,18 +1,16 @@
-pub mod websocket;
 pub mod enums;
+pub mod websocket;
+pub mod events;
 
 use crate::config::WS_URL;
-use crate::gateway::{enums::{EClientEvent, EWebsocketMessage, Opcode}, websocket::Websocket};
-use enums::EGatewayEvent;
+use crate::gateway::{enums::{EWebsocketMessage, Opcode}, websocket::Websocket};
 use serde_json::{json, Value};
 use std::{sync::Arc, str::FromStr, time::Duration};
 use colored::Colorize;
-use futures_util::future::err;
 use tokio::{task::JoinHandle, time::sleep, sync::Mutex};
-use tokio_tungstenite::tungstenite::Error;
-use tungstenite::protocol::CloseFrame;
-use tungstenite::protocol::frame::coding::CloseCode;
+use tokio_tungstenite::tungstenite::{Error, protocol::{CloseFrame, frame::coding::CloseCode}};
 use crate::error;
+use crate::gateway::events::{EClientEvent, EGatewayEvent};
 
 type ArcWebsocket = Arc<Mutex<Websocket>>;
 type ArcBool = Arc<Mutex<bool>>;
@@ -52,8 +50,8 @@ impl Gateway {
                 "intents": 513,
                 "properties": {
                     "os": &sys_info::os_type().unwrap_or(String::from("unknown")),
-                    "device": "discord-rs",
-                    "browser": "discord-rs",
+                    "device": "disco",
+                    "browser": "disco",
                 }
             }
         }).to_string();
@@ -129,6 +127,15 @@ impl Gateway {
 
         match opcode {
             Opcode::Dispatch => {
+                let event_name = match parse["t"].as_str() { 
+                    None => return Ok(EGatewayEvent::Dispatch(EClientEvent::None)),
+                    Some(event) => event,
+                };
+                let data = match parse["data"].as_str() {
+                    None => return Ok(EGatewayEvent::Dispatch(EClientEvent::None)),
+                    Some(data) => data,
+                };
+                
                 
             }
             Opcode::Heartbeat => {
@@ -194,6 +201,7 @@ impl Gateway {
                 Err(_) => return,
                 _ => {}
             };
+            
             sleep(Duration::from_millis(interval)).await;
             
             if !*is_ack_received.lock().await {
@@ -204,7 +212,7 @@ impl Gateway {
                 }
                 
                 let _ = websocket.lock().await.close(Some(CloseFrame {
-                    code: tungstenite::protocol::frame::coding::CloseCode::Away,
+                    code: CloseCode::Away,
                     reason: "Heartbeat acknowledgment not received.".into(),
                 })).await;
                 return;
