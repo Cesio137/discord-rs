@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
-use crate::internal::traits::DiscordTypes;
-
+use serde_repr::{Deserialize_repr, Serialize_repr};
 /*TYPES*/
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum ConnectionMetadataType {
     INTEGER_LESS_THAN_OR_EQUAL = 1,
     INTEGER_GREATER_THAN_OR_EQUAL = 2,
@@ -12,35 +12,6 @@ pub enum ConnectionMetadataType {
     DATETIME_GREATER_THAN_OR_EQUAL = 6,
     BOOLEAN_EQUAL = 7,
     BOOLEAN_NOT_EQUAL = 8,
-}
-
-impl DiscordTypes for ConnectionMetadataType {
-    fn from(value: u8) -> Self {
-        match value { 
-            1 => ConnectionMetadataType::INTEGER_LESS_THAN_OR_EQUAL,
-            2 => ConnectionMetadataType::INTEGER_GREATER_THAN_OR_EQUAL,
-            3 => ConnectionMetadataType::INTEGER_EQUAL,
-            4 => ConnectionMetadataType::INTEGER_NOT_EQUAL,
-            5 => ConnectionMetadataType::DATETIME_LESS_THAN_OR_EQUAL,
-            6 => ConnectionMetadataType::DATETIME_GREATER_THAN_OR_EQUAL,
-            7 => ConnectionMetadataType::BOOLEAN_EQUAL,
-            8 => ConnectionMetadataType::BOOLEAN_NOT_EQUAL,
-            _ => unreachable!()
-        }
-    }
-    
-    fn value(&self) -> u8 {
-        match self { 
-            ConnectionMetadataType::INTEGER_LESS_THAN_OR_EQUAL => 1,
-            ConnectionMetadataType::INTEGER_GREATER_THAN_OR_EQUAL => 2,
-            ConnectionMetadataType::INTEGER_EQUAL => 3,
-            ConnectionMetadataType::INTEGER_NOT_EQUAL => 4,
-            ConnectionMetadataType::DATETIME_LESS_THAN_OR_EQUAL => 5,
-            ConnectionMetadataType::DATETIME_GREATER_THAN_OR_EQUAL => 6,
-            ConnectionMetadataType::BOOLEAN_EQUAL => 7,
-            ConnectionMetadataType::BOOLEAN_NOT_EQUAL => 8,
-        }
-    }
 }
 
 /*STRUCT OBJECT*/

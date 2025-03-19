@@ -1,32 +1,14 @@
 use serde::{Deserialize, Serialize};
-use crate::internal::traits::DiscordTypes;
+use serde_repr::{Deserialize_repr, Serialize_repr};
+
 /*TYPES*/
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum WebhookTypes {
     INCOMING = 1,
     CHANNEL_FOLLOWER = 2,
     APPLICATION = 3,
 }
-
-impl DiscordTypes for WebhookTypes {
-    fn from(value: u8) -> Self {
-        match value { 
-            1 => WebhookTypes::INCOMING,
-            2 => WebhookTypes::CHANNEL_FOLLOWER,
-            3 => WebhookTypes::APPLICATION,
-            _ => unreachable!(),
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self { 
-            WebhookTypes::INCOMING => 1,
-            WebhookTypes::CHANNEL_FOLLOWER => 2,
-            WebhookTypes::APPLICATION => 3,
-        }
-    }
-}
-
 
 /*STRUCT OBJECT*/
 #[derive(Debug, Serialize, Deserialize, Clone)]

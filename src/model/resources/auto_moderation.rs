@@ -1,31 +1,16 @@
 use serde::{Deserialize, Serialize};
-use crate::internal::traits::DiscordTypes;
+use serde_repr::{Deserialize_repr, Serialize_repr};
 
 /*TYPES*/
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum EventType {
     MESSAGE_SEND = 1,
     MEMBER_UPDATE = 2,
 }
 
-impl DiscordTypes for EventType {
-    fn value(&self) -> u8 {
-        match self {
-            EventType::MESSAGE_SEND => 1,
-            EventType::MEMBER_UPDATE => 2,
-        }
-    }
-
-    fn from(value: u8) -> Self {
-        match value {
-            1 => EventType::MESSAGE_SEND,
-            2 => EventType::MEMBER_UPDATE,
-            _ => unreachable!()
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum TriggerType {
     KEYWORD = 1,
     SPAM = 3,
@@ -34,30 +19,8 @@ pub enum TriggerType {
     MEMBER_PROFILE = 6
 }
 
-impl DiscordTypes for TriggerType {
-    fn from(value: u8) -> Self {
-        match value {
-            1 => TriggerType::KEYWORD,
-            3 => TriggerType::SPAM,
-            4 => TriggerType::KEYWORD_PRESET,
-            5 => TriggerType::MENTION_SPAM,
-            6 => TriggerType::MEMBER_PROFILE,
-            _ => unreachable!()
-        }
-    }
-    
-    fn value(&self) -> u8 {
-        match self {
-            TriggerType::KEYWORD => 1,
-            TriggerType::SPAM => 3,
-            TriggerType::KEYWORD_PRESET => 4,
-            TriggerType::MENTION_SPAM => 5,
-            TriggerType::MEMBER_PROFILE => 6,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum ActionType {
     BLOCK_MESSAGE = 1,
     SEND_ALERT_MESSAGE = 2,
@@ -65,51 +28,12 @@ pub enum ActionType {
     BLOCK_MEMBER_INTERACTION = 4,
 }
 
-impl DiscordTypes for ActionType {
-    fn from(value: u8) -> Self {
-        match value {
-            1 => ActionType::BLOCK_MESSAGE,
-            2 => ActionType::SEND_ALERT_MESSAGE,
-            3 => ActionType::TIMEOUT,
-            4 => ActionType::BLOCK_MEMBER_INTERACTION,
-            _ => unreachable!()
-        }
-    }
-    
-    fn value(&self) -> u8 {
-        match self {
-            ActionType::BLOCK_MESSAGE => 1,
-            ActionType::SEND_ALERT_MESSAGE => 2,
-            ActionType::TIMEOUT => 3,
-            ActionType::BLOCK_MEMBER_INTERACTION => 4,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum KeywordPresetTypes {
     PROFANITY = 1,
     SEXUAL_CONTENT = 2,
     SLURS = 3,
-}
-
-impl DiscordTypes for KeywordPresetTypes {
-    fn from(value: u8) -> Self {
-        match value {
-            1 => KeywordPresetTypes::PROFANITY,
-            2 => KeywordPresetTypes::SLURS,
-            3 => KeywordPresetTypes::SLURS,
-            _ => unreachable!()
-        }
-    }
-    
-    fn value(&self) -> u8 {
-        match self {
-            KeywordPresetTypes::PROFANITY => 1,
-            KeywordPresetTypes::SEXUAL_CONTENT => 2,
-            KeywordPresetTypes::SLURS => 3,
-        }
-    }
 }
 
 /*STRUCT OBJECT*/

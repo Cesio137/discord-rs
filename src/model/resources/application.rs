@@ -1,60 +1,27 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::internal::traits::{DiscordFlagsTypes, DiscordTypes};
+use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::model::topics::teams::Team;
 
 /*TYPES*/
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum IntegrationType {
     GUILD_INSTALL = 0,
     USER_INSTALL = 1,
 }
 
-impl DiscordTypes for IntegrationType {
-    fn from(value: u8) -> Self {
-        match value { 
-            0 => IntegrationType::GUILD_INSTALL,
-            1 => IntegrationType::USER_INSTALL,
-            _ => unreachable!()
-        }
-    }
-    
-    fn value(&self) -> u8 {
-        match self { 
-            IntegrationType::GUILD_INSTALL => 0,
-            IntegrationType::USER_INSTALL => 1,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum EventWebhookStatus {
     DISABLED = 1,
     ENABLED = 2,
     DISABLED_BY_DISCORD = 3,
 }
 
-impl DiscordTypes for EventWebhookStatus {
-    fn from(value: u8) -> Self {
-        match value { 
-            1 => EventWebhookStatus::ENABLED,
-            2 => EventWebhookStatus::DISABLED_BY_DISCORD,
-            3 => EventWebhookStatus::DISABLED_BY_DISCORD,
-            _ => unreachable!()
-        }
-    }
-    
-    fn value(&self) -> u8 {
-        match self { 
-            EventWebhookStatus::DISABLED => 1,
-            EventWebhookStatus::ENABLED  => 2,
-            EventWebhookStatus::DISABLED_BY_DISCORD => 3
-        }
-    }
-}
-
 /*FLAGS*/
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u32)]
 pub enum ApplicationFlags {
     APPLICATION_AUTO_MODERATION_RULE_CREATE_BADGE = 64,
     GATEWAY_PRESENCE = 4096,
@@ -66,39 +33,6 @@ pub enum ApplicationFlags {
     GATEWAY_MESSAGE_CONTENT = 262144,
     GATEWAY_MESSAGE_CONTENT_LIMITED = 524288,
     APPLICATION_COMMAND_BADGE = 8388608,
-}
-
-impl DiscordFlagsTypes for ApplicationFlags {
-    fn from(value: i32) -> Self {
-        match value {
-            64 => ApplicationFlags::APPLICATION_AUTO_MODERATION_RULE_CREATE_BADGE,
-            4096 => ApplicationFlags::GATEWAY_PRESENCE,
-            8192 => ApplicationFlags::GATEWAY_PRESENCE_LIMITED,
-            16384 => ApplicationFlags::GATEWAY_GUILD_MEMBERS,
-            32768 => ApplicationFlags::GATEWAY_GUILD_MEMBERS_LIMITED,
-            65536 => ApplicationFlags::VERIFICATION_PENDING_GUILD_LIMIT,
-            131072 => ApplicationFlags::EMBEDDED,
-            262144 => ApplicationFlags::GATEWAY_MESSAGE_CONTENT,
-            524288 => ApplicationFlags::GATEWAY_MESSAGE_CONTENT_LIMITED,
-            8388608 => ApplicationFlags::APPLICATION_COMMAND_BADGE,
-            _ => unreachable!()
-        }
-    }
-
-    fn value(&self) -> i32 {
-        match self { 
-            ApplicationFlags::APPLICATION_AUTO_MODERATION_RULE_CREATE_BADGE => 64,
-            ApplicationFlags::GATEWAY_PRESENCE => 4096,
-            ApplicationFlags::GATEWAY_PRESENCE_LIMITED => 8192,
-            ApplicationFlags::GATEWAY_GUILD_MEMBERS => 16384,
-            ApplicationFlags::GATEWAY_GUILD_MEMBERS_LIMITED => 32768,
-            ApplicationFlags::VERIFICATION_PENDING_GUILD_LIMIT => 65536,
-            ApplicationFlags::EMBEDDED => 131072,
-            ApplicationFlags::GATEWAY_MESSAGE_CONTENT => 262144,
-            ApplicationFlags::GATEWAY_MESSAGE_CONTENT_LIMITED => 524288,
-            ApplicationFlags::APPLICATION_COMMAND_BADGE => 8388608,
-        }
-    }
 }
 
 /*STRUCT OBJECT*/

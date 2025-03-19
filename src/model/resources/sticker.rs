@@ -1,56 +1,21 @@
 use serde::{Deserialize, Serialize};
-use crate::internal::traits::DiscordTypes;
+use serde_repr::{Deserialize_repr, Serialize_repr};
+
 /*TYPES*/
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum StickerType {
     STANDART = 1,
     GUILD = 2
 }
 
-impl DiscordTypes for StickerType {
-    fn from(value: u8) -> Self {
-        match value { 
-            1 => StickerType::STANDART,
-            2 => StickerType::GUILD,
-            _ => unreachable!()
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self { 
-            StickerType::STANDART => 1,
-            StickerType::GUILD => 2,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum StickerFormatType {
     PNG = 1,
     APNG = 2,
     LOTTIE = 3,
     GIF = 4
-}
-
-impl DiscordTypes for StickerFormatType {
-    fn from(value: u8) -> Self {
-        match value { 
-            1 => StickerFormatType::PNG,
-            2 => StickerFormatType::APNG,
-            3 => StickerFormatType::LOTTIE,
-            4 => StickerFormatType::GIF,
-            _ => unreachable!()
-        }
-    }
-    
-    fn value(&self) -> u8 {
-        match self { 
-            StickerFormatType::PNG => 1,
-            StickerFormatType::APNG => 2,
-            StickerFormatType::LOTTIE => 3,
-            StickerFormatType::GIF => 4
-        }
-    }
 }
 
 /*STRUCT OBJECT*/

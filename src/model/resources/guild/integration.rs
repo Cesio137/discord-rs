@@ -1,29 +1,13 @@
 use serde::{Deserialize, Serialize};
-use crate::internal::traits::DiscordTypes;
+use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::model::resources::application;
 
 /*TYPES*/
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum IntegrationExpireBehavior {
     RemoveRole = 0,
     Kick = 1,
-}
-
-impl DiscordTypes for IntegrationExpireBehavior {
-    fn from(value: u8) -> Self {
-        match value {
-            0 => IntegrationExpireBehavior::RemoveRole,
-            1 => IntegrationExpireBehavior::Kick,
-            _ => unreachable!()
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self {
-            IntegrationExpireBehavior::RemoveRole => 0,
-            IntegrationExpireBehavior::Kick => 1,
-        }
-    }
 }
 
 /*STRUCT OBJECT*/
@@ -32,7 +16,7 @@ pub struct Integration {
     pub id: String,
     pub name: String,
     #[serde(rename = "type")]
-    pub type_: String,
+    pub format_type: String,
     pub enabled: bool,
     pub syncing: Option<bool>,
     pub role_id: Option<String>,

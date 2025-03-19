@@ -6,8 +6,8 @@ pub enum EWebsocketMessage {
     Close(Option<CloseFrame>)
 }
 
-#[repr(u64)]
 #[derive(Debug, Copy, Clone)]
+#[repr(u8)]
 pub enum Opcode {
     Dispatch = 0,
     Heartbeat = 1,

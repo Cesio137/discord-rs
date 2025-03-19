@@ -1,30 +1,13 @@
 use serde::{Deserialize, Serialize};
-use crate::internal::traits::DiscordTypes;
+use serde_repr::{Deserialize_repr, Serialize_repr};
+
 /*TYPES*/
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum SubscriptionStatuses {
     ACTIVE = 0,
     ENDING = 1,
     INACTIVE = 2
-}
-
-impl DiscordTypes for SubscriptionStatuses {
-    fn from(value: u8) -> Self {
-        match value { 
-            0 => SubscriptionStatuses::ACTIVE,
-            1 => SubscriptionStatuses::ENDING,
-            2 => SubscriptionStatuses::INACTIVE,
-            _ => unreachable!()
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self { 
-            SubscriptionStatuses::ACTIVE => 0,
-            SubscriptionStatuses::ENDING => 1,
-            SubscriptionStatuses::INACTIVE => 2,
-        }
-    }
 }
 
 /*STRUCT OBJECT*/

@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use tokio_tungstenite::tungstenite::{protocol::{frame::coding::CloseCode, CloseFrame}, Error};
 use crate::error::GatewayCloseCode;
 use crate::gateway::{
@@ -8,17 +9,13 @@ use crate::gateway::{
     }
 };
 use crate::utils::options::*;
-
-mod config;
-mod error;
-mod gateway;
-mod utils;
-mod handlers;
-mod resources;
-mod interactions;
-mod events;
+use crate::discord_string_type;
+pub mod config;
+pub mod error;
+pub mod gateway;
 pub mod model;
 pub mod internal;
+pub mod utils;
 
 pub struct Client {
     bot_token: String,
@@ -80,7 +77,8 @@ impl Client {
 mod tests {
     use dotenvy::dotenv;
     use std::env;
-    use crate::Client;
+    use serde_json::json;
+    use crate::{Client};
     use crate::error::Error;
     use crate::utils::options::Options;
 

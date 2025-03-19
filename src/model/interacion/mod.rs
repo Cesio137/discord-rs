@@ -1,13 +1,19 @@
 pub mod application_commands;
 pub mod message_components;
 
+use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
-use crate::internal::traits::DiscordTypes;
-use crate::model::resources::guild::GuildMember;
+use serde_repr::{Deserialize_repr, Serialize_repr};
+use crate::model::resources::application::IntegrationType;
+use crate::model::resources::channel::Channel;
+use crate::model::resources::entitlement::Entitlement;
+use crate::model::resources::guild::{Guild, GuildMember};
+use crate::model::resources::message::Message;
 use crate::model::resources::user::User;
 
 /*TYPES*/
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum InteractionType {
     Ping = 1,
     ApplicationCommand = 2,
@@ -16,79 +22,46 @@ pub enum InteractionType {
     ModalSubmit = 5,
 }
 
-impl DiscordTypes for InteractionType {
-    fn from(value: u8) -> Self {
-        match value {
-            1 => InteractionType::Ping,
-            2 => InteractionType::ApplicationCommand,
-            3 => InteractionType::MessageComponent,
-            4 => InteractionType::ApplicationCommandAutocomplete,
-            5 => InteractionType::ModalSubmit,
-            _ => unreachable!(),
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self {
-            InteractionType::Ping => 1,
-            InteractionType::ApplicationCommand => 2,
-            InteractionType::MessageComponent => 3,
-            InteractionType::ApplicationCommandAutocomplete => 4,
-            InteractionType::ModalSubmit => 5,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum InteractionContextType {
     GUILD = 0,
     BOT_DM = 1,
     PRIVATE_CHANNEL = 2,
 }
 
-impl DiscordTypes for InteractionContextType {
-    fn from(value: u8) -> Self {
-        match value {
-            0 => InteractionContextType::GUILD,
-            1 => InteractionContextType::BOT_DM,
-            2 => InteractionContextType::PRIVATE_CHANNEL,
-            _ => unreachable!(),
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self {
-            InteractionContextType::GUILD => 0,
-            InteractionContextType::BOT_DM => 1,
-            InteractionContextType::PRIVATE_CHANNEL => 2,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum EntryPointCommandHandlerType {
     APP_HANDLER = 1,
     DISCORD_LAUNCH_ACTIVITY = 2,
 }
 
-impl DiscordTypes for EntryPointCommandHandlerType {
-    fn from(value: u8) -> Self {
-        match value {
-            1 => EntryPointCommandHandlerType::APP_HANDLER,
-            2 => EntryPointCommandHandlerType::DISCORD_LAUNCH_ACTIVITY,
-            _ => EntryPointCommandHandlerType::APP_HANDLER,
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self {
-            EntryPointCommandHandlerType::APP_HANDLER => 1,
-            EntryPointCommandHandlerType::DISCORD_LAUNCH_ACTIVITY => 2,
-        }
-    }
+/*STRUCT OBJECT*/
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Interaction {
+    pub id: String,
+    pub application_id: String,
+    #[serde(rename = "type")]
+    pub format_type: i32,
+    pub data: Option<InteractionType>,
+    pub guild: Option<Guild>,
+    pub guild_id: Option<String>,
+    pub channel: Option<Channel>,
+    pub channel_id: Option<String>,
+    pub member: Option<GuildMember>,
+    pub user: Option<User>,
+    pub token: String,
+    pub version: i32,
+    pub message: Option<Message>,
+    pub app_permissions: Option<String>,
+    pub locale: Option<String>,
+    pub guild_locale: Option<String>,
+    pub entitlements: Option<Vec<Entitlement>>,
+    pub authorizing_integration_owners: Option<HashMap<String, IntegrationType>>,
+    pub context: Option<InteractionContextType>,
 }
 
-/*STRUCT OBJECT*/
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MessageInteraction {
     pub id: String,

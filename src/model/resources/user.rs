@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
-use crate::internal::traits::{DiscordStringTypes, DiscordTypes};
+use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::model::resources::guild::integration::Integration;
+
 /*TYPES*/
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum PremiumTypes {
     NONE = 0,
     NITRO_CLASSIC = 1,
@@ -10,145 +12,67 @@ pub enum PremiumTypes {
     NITRO_BASIC = 3,
 }
 
-impl DiscordTypes for PremiumTypes {
-    fn from(value: u8) -> Self {
-        match value { 
-            0 => PremiumTypes::NONE,
-            1 => PremiumTypes::NITRO_CLASSIC,
-            2 => PremiumTypes::NITRO,
-            3 => PremiumTypes::NITRO_BASIC,
-            _ => unreachable!()
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self { 
-            PremiumTypes::NONE => 0,
-            PremiumTypes::NITRO_CLASSIC => 1,
-            PremiumTypes::NITRO => 2,
-            PremiumTypes::NITRO_BASIC => 3,
-        }
-    }
-}
-
-
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum VisibilityTypes {
     NONE = 0,
     EVERYONE = 1,
 }
 
-impl DiscordTypes for VisibilityTypes {
-    fn from(value: u8) -> Self {
-        match value { 
-            0 => VisibilityTypes::NONE,
-            1 => VisibilityTypes::EVERYONE,
-            _ => unreachable!()
-        }
-    }
-    
-    fn value(&self) -> u8 {
-        match self { 
-            VisibilityTypes::NONE => 0,
-            VisibilityTypes::EVERYONE => 1,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Copy)]
 pub enum ServiceType {
+    #[serde(rename = "amazon-music")]
     AmazonMusic,
+    #[serde(rename = "battlenet")]
     Battlenet,
+    #[serde(rename = "bungie")]
     Bungie,
+    #[serde(rename = "bluesky")]
     Bluesky,
+    #[serde(rename = "crunchyroll")]
     Crunchyroll,
+    #[serde(rename = "domain")]
     Domain,
+    #[serde(rename = "ebay")]
     Ebay,
-    Epicgames,
+    #[serde(rename = "epicgames")]
+    EpicGames,
+    #[serde(rename = "facebook")]
     Facebook,
+    #[serde(rename = "github")]
     Github,
+    #[serde(rename = "instagram")]
     Instagram,
+    #[serde(rename = "leagueoflegends")]
     Leagueoflegends,
+    #[serde(rename = "mastodon")]
     Mastodon,
+    #[serde(rename = "paypal")]
     Paypal,
+    #[serde(rename = "playstation")]
     Playstation,
+    #[serde(rename = "reddit")]
     Reddit,
+    #[serde(rename = "riotgames")]
     Riotgames,
+    #[serde(rename = "roblox")]
     Roblox,
+    #[serde(rename = "spotify")]
     Spotify,
+    #[serde(rename = "skype")]
     Skype,
+    #[serde(rename = "steam")]
     Steam,
+    #[serde(rename = "tiktok")]
     Tiktok,
+    #[serde(rename = "twitch")]
     Twitch,
+    #[serde(rename = "twitter")]
     Twitter,
+    #[serde(rename = "xbox")]
     Xbox,
+    #[serde(rename = "youtube")]
     Youtube,
-}
-
-impl DiscordStringTypes for ServiceType {
-    fn from(value: String) -> Self {
-        match value.as_str() {
-            "amazon-music" => ServiceType::AmazonMusic,
-            "battlenet" => ServiceType::Battlenet,
-            "bungie" => ServiceType::Bungie,
-            "bluesky" => ServiceType::Bluesky,
-            "crunchyroll" => ServiceType::Crunchyroll,
-            "domain" => ServiceType::Domain,
-            "ebay" => ServiceType::Ebay,
-            "epicgames" => ServiceType::Epicgames,
-            "facebook" => ServiceType::Facebook,
-            "github" => ServiceType::Github,
-            "instagram" => ServiceType::Instagram,
-            "leagueoflegends" => ServiceType::Leagueoflegends,
-            "mastodon" => ServiceType::Mastodon,
-            "paypal" => ServiceType::Paypal,
-            "playstation" => ServiceType::Playstation,
-            "reddit" => ServiceType::Reddit,
-            "riotgames" => ServiceType::Riotgames,
-            "roblox" => ServiceType::Roblox,
-            "spotify" => ServiceType::Spotify,
-            "skype" => ServiceType::Skype,
-            "steam" => ServiceType::Steam,
-            "tiktok" => ServiceType::Tiktok,
-            "twitch" => ServiceType::Twitch,
-            "twitter" => ServiceType::Twitter,
-            "xbox" => ServiceType::Xbox,
-            "youtube" => ServiceType::Youtube,
-            _ => unreachable!(),
-        }
-    }
-
-    fn value(&self) -> String {
-        match self {
-            ServiceType::AmazonMusic => "amazon-music".to_string(),
-            ServiceType::Battlenet => "battlenet".to_string(),
-            ServiceType::Bungie => "bungie".to_string(),
-            ServiceType::Bluesky => "bluesky".to_string(),
-            ServiceType::Crunchyroll => "crunchyroll".to_string(),
-            ServiceType::Domain => "domain".to_string(),
-            ServiceType::Ebay => "ebay".to_string(),
-            ServiceType::Epicgames => "epicgames".to_string(),
-            ServiceType::Facebook => "facebook".to_string(),
-            ServiceType::Github => "github".to_string(),
-            ServiceType::Instagram => "instagram".to_string(),
-            ServiceType::Leagueoflegends => "leagueoflegends".to_string(),
-            ServiceType::Mastodon => "mastodon".to_string(),
-            ServiceType::Paypal => "paypal".to_string(),
-            ServiceType::Playstation => "playstation".to_string(),
-            ServiceType::Reddit => "reddit".to_string(),
-            ServiceType::Riotgames => "riotgames".to_string(),
-            ServiceType::Roblox => "roblox".to_string(),
-            ServiceType::Spotify => "spotify".to_string(),
-            ServiceType::Skype => "skype".to_string(),
-            ServiceType::Steam => "steam".to_string(),
-            ServiceType::Tiktok => "tiktok".to_string(),
-            ServiceType::Twitch => "twitch".to_string(),
-            ServiceType::Twitter => "twitter".to_string(),
-            ServiceType::Xbox => "xbox".to_string(),
-            ServiceType::Youtube => "youtube".to_string(),
-        }
-    }
 }
 
 /*STRUCT OBJECT*/

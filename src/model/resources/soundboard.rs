@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+/*STRUCT OBJECT*/
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SoundboardSound {
     pub name: String,

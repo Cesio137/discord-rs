@@ -1,28 +1,15 @@
 use serde::{Deserialize, Serialize};
-use crate::internal::traits::DiscordTypes;
+use serde_repr::{Deserialize_repr, Serialize_repr};
 
 /*TYPES*/
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum GuildScheduledEventPrivacyLevel {
     GuildOnly = 2,
 }
 
-impl DiscordTypes for GuildScheduledEventPrivacyLevel {
-    fn from(value: u8) -> Self {
-        match value {
-            2 => GuildScheduledEventPrivacyLevel::GuildOnly,
-            _ => unreachable!(),
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self {
-            GuildScheduledEventPrivacyLevel::GuildOnly => 2,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum GuildScheduledEventStatus {
     Scheduled = 1,
     Active = 2,
@@ -30,51 +17,12 @@ pub enum GuildScheduledEventStatus {
     Canceled = 4,
 }
 
-impl DiscordTypes for GuildScheduledEventStatus {
-    fn from(value: u8) -> Self {
-        match value {
-            1 => GuildScheduledEventStatus::Scheduled,
-            2 => GuildScheduledEventStatus::Active,
-            3 => GuildScheduledEventStatus::Completed,
-            4 => GuildScheduledEventStatus::Canceled,
-            _ => unreachable!(),
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self {
-            GuildScheduledEventStatus::Scheduled => 1,
-            GuildScheduledEventStatus::Active => 2,
-            GuildScheduledEventStatus::Completed => 3,
-            GuildScheduledEventStatus::Canceled => 4,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum GuildScheduledEventEntityType {
     StageInstance = 1,
     Voice = 2,
     External = 3,
-}
-
-impl DiscordTypes for GuildScheduledEventEntityType {
-    fn from(value: u8) -> Self {
-        match value {
-            1 => GuildScheduledEventEntityType::StageInstance,
-            2 => GuildScheduledEventEntityType::Voice,
-            3 => GuildScheduledEventEntityType::External,
-            _ => unreachable!(),
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self {
-            GuildScheduledEventEntityType::StageInstance => 1,
-            GuildScheduledEventEntityType::Voice => 2,
-            GuildScheduledEventEntityType::External => 3,
-        }
-    }
 }
 
 /*STRUCT OBJECT*/

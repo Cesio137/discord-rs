@@ -1,10 +1,14 @@
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
-use crate::internal::traits::{DiscordFlagsTypes, DiscordStringTypes, DiscordTypes};
-use crate::model::interacion::message_components::Component;
-use crate::model::interacion::{InteractionType, MessageInteraction};
+use serde_repr::{Deserialize_repr, Serialize_repr};
+use crate::model::interacion::message_components::{Component};
+use crate::model::interacion::{MessageInteraction};
+use crate::model::resources::application::IntegrationType;
+use crate::model::resources::user::User;
+use crate::model::topics::permisssions::Role;
+
 /*TYPES*/
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum MessageType {
     Default = 0,
     RecipientAdd = 1,
@@ -45,132 +49,26 @@ pub enum MessageType {
     PollResult = 46,
 }
 
-impl DiscordTypes for MessageType {
-    fn from(value: u8) -> Self {
-        match value {
-            0 => MessageType::Default,
-            1 => MessageType::RecipientAdd,
-            2 => MessageType::RecipientRemove,
-            3 => MessageType::Call,
-            4 => MessageType::ChannelNameChange,
-            5 => MessageType::ChannelIconChange,
-            6 => MessageType::ChannelPinnedMessage,
-            7 => MessageType::UserJoin,
-            8 => MessageType::GuildBoost,
-            9 => MessageType::GuildBoostTier1,
-            10 => MessageType::GuildBoostTier2,
-            11 => MessageType::GuildBoostTier3,
-            12 => MessageType::ChannelFollowAdd,
-            14 => MessageType::GuildDiscoveryDisqualified,
-            15 => MessageType::GuildDiscoveryRequalified,
-            16 => MessageType::GuildDiscoveryGracePeriodInitialWarning,
-            17 => MessageType::GuildDiscoveryGracePeriodFinalWarning,
-            18 => MessageType::ThreadCreated,
-            19 => MessageType::Reply,
-            20 => MessageType::ChatInputCommand,
-            21 => MessageType::ThreadStarterMessage,
-            22 => MessageType::GuildInviteReminder,
-            23 => MessageType::ContextMenuCommand,
-            24 => MessageType::AutoModerationAction,
-            25 => MessageType::RoleSubscriptionPurchase,
-            26 => MessageType::InteractionPremiumUpsell,
-            27 => MessageType::StageStart,
-            28 => MessageType::StageEnd,
-            29 => MessageType::StageSpeaker,
-            31 => MessageType::StageTopic,
-            32 => MessageType::GuildApplicationPremiumSubscription,
-            36 => MessageType::GuildIncidentAlertModeEnabled,
-            37 => MessageType::GuildIncidentAlertModeDisabled,
-            38 => MessageType::GuildIncidentReportRaid,
-            39 => MessageType::GuildIncidentReportFalseAlarm,
-            44 => MessageType::PurchaseNotification,
-            46 => MessageType::PollResult,
-            _ => unreachable!(),
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self {
-            MessageType::Default => 0,
-            MessageType::RecipientAdd => 1,
-            MessageType::RecipientRemove => 2,
-            MessageType::Call => 3,
-            MessageType::ChannelNameChange => 4,
-            MessageType::ChannelIconChange => 5,
-            MessageType::ChannelPinnedMessage => 6,
-            MessageType::UserJoin => 7,
-            MessageType::GuildBoost => 8,
-            MessageType::GuildBoostTier1 => 9,
-            MessageType::GuildBoostTier2 => 10,
-            MessageType::GuildBoostTier3 => 11,
-            MessageType::ChannelFollowAdd => 12,
-            MessageType::GuildDiscoveryDisqualified => 14,
-            MessageType::GuildDiscoveryRequalified => 15,
-            MessageType::GuildDiscoveryGracePeriodInitialWarning => 16,
-            MessageType::GuildDiscoveryGracePeriodFinalWarning => 17,
-            MessageType::ThreadCreated => 18,
-            MessageType::Reply => 19,
-            MessageType::ChatInputCommand => 20,
-            MessageType::ThreadStarterMessage => 21,
-            MessageType::GuildInviteReminder => 22,
-            MessageType::ContextMenuCommand => 23,
-            MessageType::AutoModerationAction => 24,
-            MessageType::RoleSubscriptionPurchase => 25,
-            MessageType::InteractionPremiumUpsell => 26,
-            MessageType::StageStart => 27,
-            MessageType::StageEnd => 28,
-            MessageType::StageSpeaker => 29,
-            MessageType::StageTopic => 31,
-            MessageType::GuildApplicationPremiumSubscription => 32,
-            MessageType::GuildIncidentAlertModeEnabled => 36,
-            MessageType::GuildIncidentAlertModeDisabled => 37,
-            MessageType::GuildIncidentReportRaid => 38,
-            MessageType::GuildIncidentReportFalseAlarm => 39,
-            MessageType::PurchaseNotification => 44,
-            MessageType::PollResult => 46,
-        }
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum EmbedType {
+enum EmbedType {
+    #[serde(rename = "rich")]
     RICH,
+    #[serde(rename = "image")]
     IMAGE,
+    #[serde(rename = "video")]
     VIDEO,
+    #[serde(rename = "gifv")]
     GIFV,
+    #[serde(rename = "article")]
     ARTICLE,
+    #[serde(rename = "link")]
     LINK,
+    #[serde(rename = "poll_result")]
     POLL_RESULT,
 }
 
-impl DiscordStringTypes for EmbedType {
-    fn from(value: String) -> Self {
-        match value.as_str() {
-            "rich" => EmbedType::RICH,
-            "image" => EmbedType::IMAGE,
-            "video" => EmbedType::VIDEO,
-            "gifv" => EmbedType::GIFV,
-            "article" => EmbedType::ARTICLE,
-            "link" => EmbedType::LINK,
-            "poll_result" => EmbedType::POLL_RESULT,
-            _ => unreachable!()
-        }
-    }
-
-    fn value(&self) -> String {
-        match self {
-            EmbedType::RICH => String::from("rich"),
-            EmbedType::IMAGE => String::from("image"),
-            EmbedType::VIDEO => String::from("video"),
-            EmbedType::GIFV => String::from("gifv"),
-            EmbedType::ARTICLE => String::from("article"),
-            EmbedType::LINK => String::from("link"),
-            EmbedType::POLL_RESULT => String::from("poll_result"),
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum MessageActivityType {
     JOIN = 1,
     SPECTATE = 2,
@@ -178,29 +76,9 @@ pub enum MessageActivityType {
     JOIN_REQUEST = 5,
 }
 
-impl DiscordTypes for MessageActivityType {
-    fn from(value: u8) -> Self {
-        match value {
-            1 => MessageActivityType::JOIN,
-            2 => MessageActivityType::SPECTATE,
-            3 => MessageActivityType::LISTEN,
-            5 => MessageActivityType::JOIN_REQUEST,
-            _ => unreachable!()
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self {
-            MessageActivityType::JOIN => 1,
-            MessageActivityType::SPECTATE => 2,
-            MessageActivityType::LISTEN => 3,
-            MessageActivityType::JOIN_REQUEST => 5
-        }
-    }
-}
-
 /*FLAGS*/
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u16)]
 pub enum MessageFlags {
     CROSSPOSTED = 1,
     IS_CROSSPOST = 2,
@@ -216,41 +94,35 @@ pub enum MessageFlags {
     HAS_SNAPSHOT = 16384,
 }
 
-impl DiscordFlagsTypes for MessageFlags {
-    fn from(value: i32) -> Self {
-        match value { 
-            1 => MessageFlags::CROSSPOSTED,
-            2 => MessageFlags::IS_CROSSPOST,
-            4 => MessageFlags::SUPPRESS_EMBEDS,
-            8 => MessageFlags::SOURCE_MESSAGE_DELETED,
-            16 => MessageFlags::URGENT,
-            32 => MessageFlags::HAS_THREAD,
-            64 => MessageFlags::EPHEMERAL,
-            128 => MessageFlags::LOADING,
-            256 => MessageFlags::FAILED_TO_MENTION_SOME_ROLES_IN_THREAD,
-            4096 => MessageFlags::SUPPRESS_NOTIFICATIONS,
-            8192 => MessageFlags::IS_VOICE_MESSAGE,
-            16384 => MessageFlags::HAS_SNAPSHOT,
-            _ => unreachable!()
-        }
-    }
-    
-    fn value(&self) -> i32 {
-        match self { 
-            MessageFlags::CROSSPOSTED => 1,
-            MessageFlags::IS_CROSSPOST => 2,
-            MessageFlags::SUPPRESS_EMBEDS => 4,
-            MessageFlags::SOURCE_MESSAGE_DELETED => 8,
-            MessageFlags::URGENT => 16,
-            MessageFlags::HAS_THREAD => 32,
-            MessageFlags::EPHEMERAL => 64,
-            MessageFlags::LOADING => 128,
-            MessageFlags::FAILED_TO_MENTION_SOME_ROLES_IN_THREAD => 256,
-            MessageFlags::SUPPRESS_NOTIFICATIONS => 4096,
-            MessageFlags::IS_VOICE_MESSAGE => 8192,
-            MessageFlags::HAS_SNAPSHOT => 16384,
-        }
-    }
+/*TAGS*/
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "type")]
+pub enum MessageInteractionMetadata {
+    #[serde(rename = "2")]
+    CommandInteraction {
+        id: String,
+        user: User,
+        authorizing_integration_owners: IntegrationType,
+        original_response_message_id: Option<String>,
+        target_user: Option<User>,
+        target_message_id: Option<String>,
+    },
+    #[serde(rename = "3")]
+    ComponentInteraction {
+        id: String,
+        user: User,
+        authorizing_integration_owners: IntegrationType,
+        original_response_message_id: Option<String>,
+        interacted_message_id: String,
+    },
+    #[serde(rename = "5")]
+    ModalSubmit {
+        id: String,
+        user: User,
+        authorizing_integration_owners: IntegrationType,
+        original_response_message_id: Option<String>,
+        triggering_interaction_metadata: MessageInteractionMetadata,
+    },
 }
 
 /*STRUCT OBJECT*/
@@ -258,13 +130,13 @@ impl DiscordFlagsTypes for MessageFlags {
 pub struct Message {
     pub id: String,
     pub channel_id: String,
-    pub author: super::user::User,
+    pub author: User,
     pub content: String,
     pub timestamp: String,
     pub edited_timestamp: Option<String>,
     pub tts: bool,
     pub mention_everyone: bool,
-    pub mentions: Vec<super::user::User>,
+    pub mentions: Vec<User>,
     pub mention_roles: Vec<String>,
     pub mention_channels: Option<Vec<ChannelMention>>,
     pub attachments: Vec<Attachment>,
@@ -296,20 +168,6 @@ pub struct Message {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct MessageInteractionMetadata {
-    pub id: String,
-    #[serde(rename = "type")]
-    pub format_type: InteractionType,
-    pub user: super::user::User,
-    pub authorizing_integration_owners: u8,//
-    pub original_response_message_id: Option<String>,
-    pub target_user: super::user::User,
-    // Message Component Interaction Metadata
-    pub interacted_message_id: Option<String>,
-    pub triggering_interaction_metadata: Option<MessageInteractionMetadata>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MessageActivity {
     pub format_type: MessageActivityType,
     pub party_id: Option<String>,
@@ -317,35 +175,15 @@ pub struct MessageActivity {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MessageSnapshot {
-    pub id: String,
-    pub channel_id: String,
-    pub content: String,
-    pub timestamp: String,
-    pub edited_timestamp: Option<String>,
-    pub tts: bool,
-    pub mention_everyone: bool,
-    pub mention_roles: Vec<String>,
-    pub attachments: Vec<super::attachment::Attachment>,
-    pub embeds: Vec<super::embed::Embed>,
-    pub nonce: Option<String>,
-    pub pinned: bool,
-    pub webhook_id: Option<String>,
-    #[serde(rename = "type")]
-    pub type_: u8,
-    pub application_id: Option<String>,
-    pub flags: Option<i32>,
-    pub interaction: Option<super::message_interaction::MessageInteraction>,
-    pub components: Option<Vec<super::component::Component>>,
-    pub sticker_items: Option<Vec<super::sticker_item::StickerItem>>,
-    pub position: Option<i32>,
+    pub message: Message,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ResolvedData {
-    pub users: Option<Vec<super::user::User>>,
-    pub members: Option<Vec<super::guild_member::GuildMember>>,
+    pub users: Option<Vec<User>>,
+    pub members: Option<Vec<super::guild::GuildMember>>,
     pub channels: Option<Vec<super::channel::Channel>>,
-    pub roles: Option<Vec<super::role::Role>>,
+    pub roles: Option<Vec<Role>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

@@ -1,29 +1,13 @@
 use serde::{Deserialize, Serialize};
-use crate::internal::traits::DiscordTypes;
+use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::model::resources::user::User;
 
-/*STRUCT OBJECT*/
-#[derive(Debug, Serialize, Deserialize, Clone)]
+/*TYPES*/
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum MembershipState {
     INVITED = 1,
     ACCEPTED = 2
-}
-
-impl DiscordTypes for MembershipState {
-    fn from(value: u8) -> Self {
-        match value { 
-            1 => MembershipState::INVITED,
-            2 => MembershipState::ACCEPTED,
-            _ => unreachable!(),
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self { 
-            MembershipState::INVITED => 1,
-            MembershipState::ACCEPTED => 2,
-        }
-    }
 }
 
 /*STRUCT OBJECT*/

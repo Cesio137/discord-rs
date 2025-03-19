@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
-use crate::internal::traits::DiscordTypes;
+use serde_repr::{Deserialize_repr, Serialize_repr};
 
 /*TYPES*/
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum EntitlementType {
     PURCHASE = 1,
     PREMIUM_SUBSCRIPTION = 2,
@@ -12,35 +13,6 @@ pub enum EntitlementType {
     USER_GIFT = 6,
     PREMIUM_PURCHASE = 7,
     APPLICATION_SUBSCRIPTION = 8
-}
-
-impl DiscordTypes for EntitlementType {
-    fn from(value: u8) -> Self {
-        match value {
-            1 => EntitlementType::PURCHASE,
-            2 => EntitlementType::PREMIUM_SUBSCRIPTION,
-            3 => EntitlementType::DEVELOPER_GIFT,
-            4 => EntitlementType::TEST_MODE_PURCHASE,
-            5 => EntitlementType::FREE_PURCHASE,
-            6 => EntitlementType::USER_GIFT,
-            7 => EntitlementType::PREMIUM_PURCHASE,
-            8 => EntitlementType::APPLICATION_SUBSCRIPTION,
-            _ => unreachable!()
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self {
-            EntitlementType::PURCHASE => 1,
-            EntitlementType::PREMIUM_SUBSCRIPTION => 2,
-            EntitlementType::DEVELOPER_GIFT => 3,
-            EntitlementType::TEST_MODE_PURCHASE => 4,
-            EntitlementType::FREE_PURCHASE => 5,
-            EntitlementType::USER_GIFT => 6,
-            EntitlementType::PREMIUM_PURCHASE => 7,
-            EntitlementType::APPLICATION_SUBSCRIPTION => 8,
-        }
-    }
 }
 
 /*STRUCT OBJECT*/

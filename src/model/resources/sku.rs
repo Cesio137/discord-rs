@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
-use crate::internal::traits::DiscordTypes;
+use serde_repr::{Deserialize_repr, Serialize_repr};
+
 /*TYPES*/
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum SkuType {
     DURABLE = 2,
     CONSUMABLE = 3,
@@ -9,33 +11,12 @@ pub enum SkuType {
     SUBSCRIPTION_GROUP = 6
 }
 
-impl DiscordTypes for SkuType {
-    fn from(value: u8) -> Self {
-        match value {
-            2 => SkuType::DURABLE,
-            3 => SkuType::CONSUMABLE,
-            5 => SkuType::SUBSCRIPTION,
-            6 => SkuType::SUBSCRIPTION_GROUP,
-            _ => unreachable!(),
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self {
-            SkuType::DURABLE => 2,
-            SkuType::CONSUMABLE => 3,
-            SkuType::SUBSCRIPTION => 5,
-            SkuType::SUBSCRIPTION_GROUP => 6,
-        }
-    }
-}
-
 /*STRUCT OBJECT*/
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Sku {
     pub id: String,
     #[serde(rename = "type")]
-    pub type_: SkuType,
+    pub format_type: SkuType,
     pub application_id: String,
     pub name: String,
     pub slug: String,

@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
-use crate::internal::traits::DiscordTypes;
+use serde_repr::{Deserialize_repr, Serialize_repr};
 
 /*TYPES*/
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum ChannelType {
     GUILD_TEXT = 0,
     DM = 1,
@@ -19,138 +20,33 @@ pub enum ChannelType {
     GUILD_MEDIA = 16
 }
 
-impl DiscordTypes for ChannelType {
-    fn from(value: u8) -> Self {
-        match value {
-            0 => ChannelType::GUILD_TEXT,
-            1 => ChannelType::DM,
-            2 => ChannelType::GUILD_VOICE,
-            3 => ChannelType::GROUP_DM,
-            4 => ChannelType::GUILD_CATEGORY,
-            5 => ChannelType::GUILD_ANNOUNCEMENT,
-            10 => ChannelType::ANNOUNCEMENT_THREAD,
-            11 => ChannelType::PUBLIC_THREAD,
-            12 => ChannelType::PRIVATE_THREAD,
-            13 => ChannelType::GUILD_STAGE_VOICE,
-            14 => ChannelType::GUILD_DIRECTORY,
-            15 => ChannelType::GUILD_FORUM,
-            16 => ChannelType::GUILD_MEDIA,
-            _ => unreachable!()
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self {
-            ChannelType::GUILD_TEXT => 0,
-            ChannelType::DM => 1,
-            ChannelType::GUILD_VOICE => 2,
-            ChannelType::GROUP_DM => 3,
-            ChannelType::GUILD_CATEGORY => 4,
-            ChannelType::GUILD_ANNOUNCEMENT => 5,
-            ChannelType::ANNOUNCEMENT_THREAD => 10,
-            ChannelType::PUBLIC_THREAD => 11,
-            ChannelType::PRIVATE_THREAD => 12,
-            ChannelType::GUILD_STAGE_VOICE => 13,
-            ChannelType::GUILD_DIRECTORY => 14,
-            ChannelType::GUILD_FORUM => 15,
-            ChannelType::GUILD_MEDIA => 16
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum VideoQualityMode {
     AUTO = 1,
     FULL = 2,
 }
 
-impl DiscordTypes for VideoQualityMode {
-    fn from(value: u8) -> Self {
-        match value {
-            0 => VideoQualityMode::AUTO,
-            1 => VideoQualityMode::FULL,
-            _ => unreachable!()
-        }
-    }
-    
-    fn value(&self) -> u8 {
-        match self {
-            VideoQualityMode::AUTO => 0,
-            VideoQualityMode::FULL => 1
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum SortOrderType {
     LATEST_ACTIVITY = 0,
     CREATION_DATEL = 1,
 }
 
-impl DiscordTypes for SortOrderType {
-    fn from(value: u8) -> Self {
-        match value {
-            0 => SortOrderType::LATEST_ACTIVITY,
-            1 => SortOrderType::CREATION_DATEL,
-            _ => unreachable!()
-        }
-    }
-    
-    fn value(&self) -> u8 {
-        match self {
-            SortOrderType::LATEST_ACTIVITY => 0,
-            SortOrderType::CREATION_DATEL => 1,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum ForumLayoutType {
     NOT_SET= 0,
     LIST_VIEW = 1,
     GALLERY_VIEW = 2
 }
 
-impl DiscordTypes for ForumLayoutType {
-    fn from(value: u8) -> Self {
-        match value {
-            0 => ForumLayoutType::NOT_SET,
-            1 => ForumLayoutType::LIST_VIEW,
-            2 => ForumLayoutType::GALLERY_VIEW,
-            _ => unreachable!()
-        }
-    }
-    
-    fn value(&self) -> u8 {
-        match self {
-            ForumLayoutType::NOT_SET => 0,
-            ForumLayoutType::LIST_VIEW => 1,
-            ForumLayoutType::GALLERY_VIEW => 2,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum OverwriteType {
     ROLE = 0,
     MEMBER = 1
-}
-
-impl DiscordTypes for OverwriteType {
-    fn from(value: u8) -> Self {
-        match value {
-            0 => OverwriteType::ROLE,
-            1 => OverwriteType::MEMBER,
-            _ => unreachable!()
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self {
-            OverwriteType::ROLE => 0,
-            OverwriteType::MEMBER => 1
-        }
-    }
 }
 
 /*STRUCT OBJECT*/

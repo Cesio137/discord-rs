@@ -1,32 +1,10 @@
 use serde::{Deserialize, Serialize};
-use crate::internal::traits::DiscordTypes;
+use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::model::resources::channel::ChannelType;
 use crate::model::resources::emoji::Emoji;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(tag = "type")]
-pub enum Component {
-    #[serde(rename = "1")]
-    ActionRow {
-        components: Vec<Component>,
-    },
-    #[serde(rename = "2")]
-    Button(Button),
-    #[serde(rename = "3")]
-    SelectMenu(SelectMenu),
-    #[serde(rename = "4")]
-    TextInput(TextInput),
-    #[serde(rename = "5")]
-    UserSelect(SelectMenu),
-    #[serde(rename = "6")]
-    RoleSelect(SelectMenu),
-    #[serde(rename = "7")]
-    MentionableSelect(SelectMenu),
-    #[serde(rename = "8")]
-    ChannelSelect(SelectMenu),
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum ButtonStyle {
     Primary = 1,
     Secondary = 2,
@@ -36,52 +14,97 @@ pub enum ButtonStyle {
     Premium = 6,
 }
 
-impl DiscordTypes for ButtonStyle {
-    fn from(value: u8) -> Self {
-        match value {
-            1 => ButtonStyle::Primary,
-            2 => ButtonStyle::Secondary,
-            3 => ButtonStyle::Success,
-            4 => ButtonStyle::Danger,
-            5 => ButtonStyle::Link,
-            6 => ButtonStyle::Premium,
-            _ => unreachable!(),
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self {
-            ButtonStyle::Primary => 1,
-            ButtonStyle::Secondary => 2,
-            ButtonStyle::Success => 3,
-            ButtonStyle::Danger => 4,
-            ButtonStyle::Link => 5,
-            ButtonStyle::Premium => 6,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize_repr, Deserialize_repr, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
 pub enum TextInputStyle {
     Short = 1,
     Paragraph = 2,
 }
 
-impl DiscordTypes for TextInputStyle {
-    fn from(value: u8) -> Self {
-        match value {
-            1 => TextInputStyle::Short,
-            2 => TextInputStyle::Paragraph,
-            _ => unreachable!(),
-        }
-    }
-
-    fn value(&self) -> u8 {
-        match self {
-            TextInputStyle::Short => 1,
-            TextInputStyle::Paragraph => 2,
-        }
-    }
+/*TAGS*/
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "type")]
+pub enum Component {
+    #[serde(rename = "1")]
+    ActionRow {
+        components: Vec<Component>,
+    },
+    #[serde(rename = "2")]
+    Button {
+        style: ButtonStyle,
+        label: Option<String>,
+        emoji: Option<super::super::resources::emoji::Emoji>,
+        custom_id: Option<String>,
+        sku_id: Option<String>,
+        url: Option<String>,
+        disabled: Option<bool>,
+    },
+    #[serde(rename = "3")]
+    SelectMenu {
+        custom_id: String,
+        options: Option<Vec<SelectOption>>,
+        channel_types: Option<Vec<ChannelType>>,
+        placeholder: Option<String>,
+        default_values: Option<Vec<SelectDefaultValue>>,
+        min_values: Option<u32>,
+        max_values: Option<u32>,
+        disabled: Option<bool>,
+    },
+    #[serde(rename = "4")]
+    TextInput {
+        custom_id: String,
+        style: TextInputStyle,
+        label: String,
+        min_length: Option<u32>,
+        max_length: Option<u32>,
+        required: Option<bool>,
+        value: Option<String>,
+        placeholder: Option<String>,
+    },
+    #[serde(rename = "5")]
+    UserSelect {
+        custom_id: String,
+        options: Option<Vec<SelectOption>>,
+        channel_types: Option<Vec<ChannelType>>,
+        placeholder: Option<String>,
+        default_values: Option<Vec<SelectDefaultValue>>,
+        min_values: Option<u32>,
+        max_values: Option<u32>,
+        disabled: Option<bool>,
+    },
+    #[serde(rename = "6")]
+    RoleSelect {
+        custom_id: String,
+        options: Option<Vec<SelectOption>>,
+        channel_types: Option<Vec<ChannelType>>,
+        placeholder: Option<String>,
+        default_values: Option<Vec<SelectDefaultValue>>,
+        min_values: Option<u32>,
+        max_values: Option<u32>,
+        disabled: Option<bool>,
+    },
+    #[serde(rename = "7")]
+    MentionableSelect {
+        custom_id: String,
+        options: Option<Vec<SelectOption>>,
+        channel_types: Option<Vec<ChannelType>>,
+        placeholder: Option<String>,
+        default_values: Option<Vec<SelectDefaultValue>>,
+        min_values: Option<u32>,
+        max_values: Option<u32>,
+        disabled: Option<bool>,
+    },
+    #[serde(rename = "8")]
+    ChannelSelect {
+        custom_id: String,
+        options: Option<Vec<SelectOption>>,
+        channel_types: Option<Vec<ChannelType>>,
+        placeholder: Option<String>,
+        default_values: Option<Vec<SelectDefaultValue>>,
+        min_values: Option<u32>,
+        max_values: Option<u32>,
+        disabled: Option<bool>,
+    },
 }
 
 /*STRUCT OBJECT*/
