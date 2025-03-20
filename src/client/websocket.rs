@@ -1,10 +1,15 @@
 use tokio::net::TcpStream;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, tungstenite::Error, connect_async};
-use tokio_tungstenite::tungstenite::{Message, protocol::CloseFrame};
+use tokio_tungstenite::tungstenite::{Message, protocol::CloseFrame, Utf8Bytes};
 use futures_util::{SinkExt, StreamExt};
-use crate::gateway::enums::EWebsocketMessage;
 
 type WebsocketStream = WebSocketStream<MaybeTlsStream<TcpStream>>;
+
+pub enum EWebsocketMessage {
+    None,
+    Text(Utf8Bytes),
+    Close(Option<CloseFrame>)
+}
 
 pub struct Websocket {
     stream: WebsocketStream,

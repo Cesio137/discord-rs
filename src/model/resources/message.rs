@@ -121,7 +121,7 @@ pub enum MessageInteractionMetadata {
         user: User,
         authorizing_integration_owners: IntegrationType,
         original_response_message_id: Option<String>,
-        triggering_interaction_metadata: MessageInteractionMetadata,
+        triggering_interaction_metadata: Box<MessageInteractionMetadata>,
     },
 }
 
@@ -151,7 +151,7 @@ pub struct Message {
     pub application: Option<super::application::Application>,
     pub application_id: Option<String>,
     pub flags: Option<MessageFlags>,
-    pub message_reference: Option<Message>,
+    pub message_reference: Option<MessageReference>,
     pub message_snapshots: Option<Vec<MessageSnapshot>>,
     pub referenced_message: Option<Box<Message>>,
     pub interaction_metadata: Option<MessageInteractionMetadata>,
@@ -167,6 +167,13 @@ pub struct Message {
     pub call: Option<MessageCall>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MessageReference {
+    pub message_id: Option<String>,
+    pub channel_id: Option<String>,
+    pub guild_id: Option<String>,
+    pub fail_if_not_exists: Option<bool>,
+}
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MessageActivity {
     pub format_type: MessageActivityType,

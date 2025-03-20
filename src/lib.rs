@@ -1,84 +1,20 @@
 use serde::{Deserialize, Serialize};
 use tokio_tungstenite::tungstenite::{protocol::{frame::coding::CloseCode, CloseFrame}, Error};
 use crate::error::GatewayCloseCode;
-use crate::gateway::{
-    Gateway,
-    events::{
-        EClientEvent,
-        EGatewayEvent
-    }
-};
 use crate::utils::options::*;
-use crate::discord_string_type;
 pub mod config;
 pub mod error;
-pub mod gateway;
 pub mod model;
 pub mod internal;
 pub mod utils;
-
-pub struct Client {
-    bot_token: String,
-    client_options: Options,
-    gateway: Gateway
-}
-
-impl Client {
-    pub async fn new(bot_token: String, client_options: Options) -> Result<Client, Error> {
-        let gateway = Gateway::new().await?;
-        Ok(Self {
-            bot_token,
-            client_options,
-            gateway,
-        })
-    }
-
-    pub async fn login(&self) -> Result<(), Error> {
-        self.gateway.identify(&self.bot_token).await?;
-        Ok(())
-    }
-
-    pub async fn pool(&mut self) -> Result<EClientEvent, error::Error> {
-        match self.gateway.pool().await? {
-            EGatewayEvent::Dispatch(client_event) => return Ok(client_event),
-            EGatewayEvent::Close(close_frame) => {
-                let code = match close_frame.code {
-                    CloseCode::Library(code) => code,
-                    _ => {return Err(error::Error::ConnectionClosed(close_frame.into()))}
-                };
-                let close_code = GatewayCloseCode::new(code);
-                eprintln!("Close code: {}\nDescription: {}\nExplanation: {}\nReconnect: {}\n", 
-                          close_code.code, 
-                          close_code.explanation, 
-                          close_code.description, 
-                          close_code.reconnect
-                );
-                self.reconnect().await?;
-            },
-            _ => {}
-        }
-
-        Ok(EClientEvent::None)
-    }
-
-    async fn reconnect(&mut self) -> Result<(), Error> {
-        let _ = self.gateway.close(Some(CloseFrame {
-            code: CloseCode::Normal,
-            reason: "".into(),
-        })).await;
-
-        self.gateway = Gateway::new().await?;
-        self.gateway.identify(&self.bot_token).await?;
-        Ok(())
-    }
-}
+pub mod client;
 
 #[cfg(test)]
 mod tests {
     use dotenvy::dotenv;
     use std::env;
     use serde_json::json;
-    use crate::{Client};
+    use crate::client::Client;
     use crate::error::Error;
     use crate::utils::options::Options;
 

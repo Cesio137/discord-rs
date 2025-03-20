@@ -1,20 +1,26 @@
-pub mod enums;
-pub mod websocket;
-pub mod events;
-
 use crate::config::WS_URL;
-use crate::gateway::{enums::{EWebsocketMessage, Opcode}, websocket::Websocket};
+use super::websocket::{Websocket, EWebsocketMessage};
 use serde_json::{json, Value};
 use std::{sync::Arc, str::FromStr, time::Duration};
 use colored::Colorize;
 use tokio::{task::JoinHandle, time::sleep, sync::Mutex};
 use tokio_tungstenite::tungstenite::{Error, protocol::{CloseFrame, frame::coding::CloseCode}};
 use crate::error;
-use crate::gateway::events::{EClientEvent, EGatewayEvent};
+use crate::model::events::gateway::{GatewayOpcode, Identify, Payload, Ready, ReceivedEvent};
 
+/*TYPES*/
 type ArcWebsocket = Arc<Mutex<Websocket>>;
 type ArcBool = Arc<Mutex<bool>>;
 
+/*EVENTS*/
+pub enum EGatewayEvent {
+    Dispatch(ReceivedEvent),
+    ReconnectRequired,
+    InvalidSession(bool),
+    Close(CloseFrame)
+}
+
+/*STRUCT*/
 pub struct Gateway {
     websocket: ArcWebsocket,
     handler_task: Option<JoinHandle<()>>,
@@ -43,38 +49,42 @@ impl Gateway {
     }
 
     pub async fn identify(&self, bot_token: &str) -> Result<(), Error> {
-        let identify_payload = json!({
-            "op": 2,
-            "d": {
-                "token": bot_token,
-                "intents": 513,
-                "properties": {
-                    "os": &sys_info::os_type().unwrap_or(String::from("unknown")),
-                    "device": "disco",
-                    "browser": "disco",
-                }
-            }
-        }).to_string();
-        self.websocket.lock().await.send(identify_payload).await?;
+        let identify = Identify {
+            token: bot_token.to_string(),
+            ..std::default::Default::default()
+        };
+        let payload = Payload {
+            op: GatewayOpcode::Identify,
+            d: serde_json::to_value(identify).unwrap_or_else(|err| {
+                eprintln!("{}", err);
+                Value::Null
+            }).into(),
+            ..std::default::Default::default()
+        };
+        let json = serde_json::to_string(&payload).unwrap_or_else(|err| {
+            eprintln!("{}", err);
+            String::new()
+        });
+        self.websocket.lock().await.send(json).await?;
         Ok(())
     }
-    
+
     pub async fn pool(&mut self) -> Result<EGatewayEvent, error::Error>  {
         let data = match self.websocket.lock().await.pool().await? {
-            EWebsocketMessage::None => return Ok(EGatewayEvent::Dispatch(EClientEvent::None)),
+            EWebsocketMessage::None => return Ok(EGatewayEvent::Dispatch(ReceivedEvent::None)),
             EWebsocketMessage::Text(utf8_bytes) => utf8_bytes.to_string(),
             EWebsocketMessage::Close(close_frame) => {
                 let frame = match close_frame {
                     None => return Err(error::Error::ConnectionClosed(None)),
                     Some(frame) => frame
                 };
-                
-                let lib_code = match frame.code {
+
+                let frame_code = match frame.code {
                     CloseCode::Library(code) => code,
                     _ => {return Err(error::Error::from(frame))}
                 };
-                
-                match lib_code { 
+
+                match frame_code {
                     4000 => return Ok(EGatewayEvent::Close(frame)),
                     4001 => return Ok(EGatewayEvent::Close(frame)),
                     4002 => return Ok(EGatewayEvent::Close(frame)),
@@ -102,55 +112,77 @@ impl Gateway {
         self.websocket.lock().await.close(msg).await?;
         Ok(())
     }
-    
+
     async fn handle_events(&mut self, data: &str) -> Result<EGatewayEvent, Error>  {
         let parse = match Value::from_str(data) {
             Ok(str) => str,
             Err(err) => {
                 eprintln!("Error trying to parse json data.\n{}", err);
-                
-                return Ok(EGatewayEvent::Dispatch(EClientEvent::None))
+                return Ok(EGatewayEvent::Dispatch(ReceivedEvent::None))
             }
         };
 
         let opcode = match parse["op"].as_u64() {
-            None => return Ok(EGatewayEvent::Dispatch(EClientEvent::None)),
-            Some(op) => match enums::Opcode::try_from(op) {
-                Ok(op) => op,
-                Err(_) => {
-                    eprintln!("Error trying to get 'op' field from json data.");
-                    
-                    return Ok(EGatewayEvent::Dispatch(EClientEvent::None));
+            None => return Ok(EGatewayEvent::Dispatch(ReceivedEvent::None)),
+            Some(op) => { 
+                match op { 
+                    0 => GatewayOpcode::Dispatch,
+                    1 => GatewayOpcode::Heartbeat,
+                    2 => GatewayOpcode::Identify,
+                    3 => GatewayOpcode::StatusUpdate,
+                    4 => GatewayOpcode::VoiceStateUpdate,
+                    6 => GatewayOpcode::Resume,
+                    7 => GatewayOpcode::Reconnect,
+                    8 => GatewayOpcode::RequestGuildMembers,
+                    9 => GatewayOpcode::InvalidSession,
+                    10 => GatewayOpcode::Hello,
+                    11 => GatewayOpcode::HeartbeatAck,
+                    _ => {
+                        eprintln!("Error trying to parse opcode from json data.");
+                        return Ok(EGatewayEvent::Dispatch(ReceivedEvent::None))
+                    }
                 }
-            },
+            }
         };
 
         match opcode {
-            Opcode::Dispatch => {
-                let event_name = match parse["t"].as_str() { 
-                    None => return Ok(EGatewayEvent::Dispatch(EClientEvent::None)),
+            GatewayOpcode::Dispatch => {
+                let event_name = match parse["t"].as_str() {
+                    None => return Ok(EGatewayEvent::Dispatch(ReceivedEvent::None)),
                     Some(event) => event,
                 };
-                let data = match parse["data"].as_str() {
-                    None => return Ok(EGatewayEvent::Dispatch(EClientEvent::None)),
+                let data = match parse["d"].as_str() {
+                    None => return Ok(EGatewayEvent::Dispatch(ReceivedEvent::None)),
                     Some(data) => data,
                 };
                 
-                
+                match event_name { 
+                    "READY" => {
+                        let ready: Ready = match serde_json::from_str(data) {
+                            Ok(ready) => ready,
+                            Err(err) => {
+                                eprintln!("Error trying to parse ready data.\n{}", err);
+                                return Ok(EGatewayEvent::Dispatch(ReceivedEvent::None))
+                            }
+                        };
+                        return Ok(EGatewayEvent::Dispatch(ReceivedEvent::Ready(ready)))
+                    }
+                    _ => todo!()
+                }
             }
-            Opcode::Heartbeat => {
+            GatewayOpcode::Heartbeat => {
                 let heartbeat_payload = json!({
                     "op": 1,
                     "d": null
                 }).to_string();
                 self.websocket.lock().await.send(heartbeat_payload).await?;
             }
-            Opcode::Reconnect => {
+            GatewayOpcode::Reconnect => {
                 println!("{}", "Need to reconnect.".yellow());
-                
+
                 return Ok(EGatewayEvent::ReconnectRequired);
             }
-            Opcode::InvalidSession => {
+            GatewayOpcode::InvalidSession => {
                 println!("{}", "Invalid session.".yellow());
 
                 let d = match parse["d"].as_bool() {
@@ -159,14 +191,14 @@ impl Gateway {
                 };
                 return Ok(EGatewayEvent::InvalidSession(d));
             }
-            Opcode::Hello => {
+            GatewayOpcode::Hello => {
                 match &self.handler_task {
                     None => {}
                     Some(task) => {
                         task.abort();
                     }
                 }
-                
+
                 let interval: u64 = match parse["d"].as_object() {
                     None => 40000,
                     Some(d) => d["heartbeat_interval"].as_u64().unwrap_or(40000),
@@ -177,13 +209,13 @@ impl Gateway {
                     Gateway::heartbeat(ws_clone, is_ack_received_clone, interval).await;
                 }).into();
             }
-            Opcode::HeartbeatAck => {
+            GatewayOpcode::HeartbeatAck => {
                 *self.is_ack_received.lock().await = true;
             }
             _ => {}
         }
-        
-        Ok(EGatewayEvent::Dispatch(EClientEvent::None))
+
+        Ok(EGatewayEvent::Dispatch(ReceivedEvent::None))
     }
 
     async fn heartbeat(websocket: Arc<Mutex<Websocket>>, is_ack_received: Arc<Mutex<bool>>, interval: u64) {
@@ -196,21 +228,21 @@ impl Gateway {
             if !websocket.lock().await.is_open() {
                 return;
             }
-            
+
             let _ = match websocket.lock().await.send(heartbeat_payload.clone()).await {
                 Err(_) => return,
                 _ => {}
             };
-            
+
             sleep(Duration::from_millis(interval)).await;
-            
+
             if !*is_ack_received.lock().await {
                 println!("{}", "Heartbeat acknowledgment not received! Closing connection.".yellow());
 
                 if !websocket.lock().await.is_open() {
                     return;
                 }
-                
+
                 let _ = websocket.lock().await.close(Some(CloseFrame {
                     code: CloseCode::Away,
                     reason: "Heartbeat acknowledgment not received.".into(),
