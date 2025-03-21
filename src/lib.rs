@@ -16,6 +16,7 @@ mod tests {
     use serde_json::json;
     use crate::client::Client;
     use crate::error::Error;
+    use crate::model::events::gateway::ReceivedEvent;
     use crate::utils::options::Options;
 
     #[tokio::test]
@@ -50,7 +51,14 @@ mod tests {
                     }
                 },
             };
-            println!("Event name: {:?}", events);
+            match events {
+                ReceivedEvent::Ready(data) => {
+                    println!("Event info: {:?}", data);
+                    break;
+                }
+                _ => println!("{:?}", events)
+            }
         }
+        println!("Closing.");
     }
 }

@@ -50,7 +50,7 @@ impl Gateway {
 
     pub async fn identify(&self, bot_token: &str) -> Result<(), Error> {
         let identify = Identify {
-            token: bot_token.to_string(),
+            token: format!("Bot {}", bot_token),
             ..std::default::Default::default()
         };
         let payload = Payload {
@@ -121,6 +121,7 @@ impl Gateway {
                 return Ok(EGatewayEvent::Dispatch(ReceivedEvent::None))
             }
         };
+        
 
         let opcode = match parse["op"].as_u64() {
             None => return Ok(EGatewayEvent::Dispatch(ReceivedEvent::None)),
@@ -151,7 +152,7 @@ impl Gateway {
                     None => return Ok(EGatewayEvent::Dispatch(ReceivedEvent::None)),
                     Some(event) => event,
                 };
-                let data = match parse["d"].as_str() {
+                let data = match parse["data"].as_str() {
                     None => return Ok(EGatewayEvent::Dispatch(ReceivedEvent::None)),
                     Some(data) => data,
                 };
